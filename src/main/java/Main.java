@@ -6,6 +6,9 @@ import java.util.zip.GZIPInputStream;
 
 public class Main {
 
+    public static final float INITIAL_SPEED = 0.03f;
+    public static final float SPEED_SCALE = 0.6f;
+
     public static void main(String[] args) throws RuntimeException {
         try (
             var testImagesFile = new FileInputStream("src/main/resources/t10k-images-idx3-ubyte.gz");
@@ -28,14 +31,16 @@ public class Main {
 
             var prevFail = (float)trainImages.length + 1;
             var fail = prevFail - 1;
-            var speed = 15.0f;
+            var speed = INITIAL_SPEED;
             var order = new LinkedList<Integer>();
 
             for (var i = 0; i < trainImages.length; i++) {
                 order.add(i);
             }
 
-            for (var epoch = 0; epoch < 30; epoch++) {
+            for (var epoch = 0; epoch < 40 && (fail / testImages.length) > 0.081; epoch++) {
+                var epochStart = System.currentTimeMillis();
+
                 if (prevFail > fail) {
                     speed *= 1.2;
                 }
@@ -51,18 +56,20 @@ public class Main {
                     p.train(trainImages[i], result, target, speed);
                 }
 
-                speed *= 0.6;
+                speed *= SPEED_SCALE;
 
                 fail = test(testImages, testLabels, p, new PrintStream(PrintStream.nullOutputStream()));
 
-                var epochTime = System.currentTimeMillis() - start;
+                var epochTime = System.currentTimeMillis() - epochStart;
 
                 System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + (fail / testImages.length) * 100 + "%");
             }
 
+            var testStart = System.currentTimeMillis();
+
             fail = test(testImages, testLabels, p, System.out);
 
-            System.out.println("test is done. " + (System.currentTimeMillis() - start) + " ms. Error rate is: " + (fail / testImages.length) * 100 + "%");
+            System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + (fail / testImages.length) * 100 + "%");
 
             System.out.println("Success");
         } catch (IOException e) {
