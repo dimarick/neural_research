@@ -1,27 +1,26 @@
 
+import linear.matrix.MatrixF32;
+import linear.matrix.MatrixF32Interface;
+import linear.matrix.Ops;
+
 import java.util.Random;
 
 public class SingleLayerPerceptron {
-    final private float[][] weights;
+    final private MatrixF32 weights;
     final private int sensorLayerSize;
     final private int outputLayerSize;
 
     public SingleLayerPerceptron(int sensorLayerSize, int outputLayerSize, long seed) {
         this.sensorLayerSize = sensorLayerSize;
         this.outputLayerSize = outputLayerSize;
-        this.weights = new float[outputLayerSize][sensorLayerSize];
+        this.weights = new MatrixF32(outputLayerSize, sensorLayerSize);
 
         generateWeights(seed);
     }
 
     public float[] eval(float[] sensorData) {
-        var result = new float[outputLayerSize];
-
-        for (var i = 0; i < outputLayerSize; i++) {
-            for (var j = 0; j < sensorLayerSize; j++) {
-                result[i] += sensorData[j] * weights[i][j];
-            }
-        }
+        var sensor = new MatrixF32(1, sensorData.length, sensorData);
+        var result = ((MatrixF32Interface) Ops.multipleTransposed(this.weights, sensor)).getData();
 
         for (var i = 0; i < result.length; i++) {
             result[i] = activation(result[i]);
@@ -37,19 +36,27 @@ public class SingleLayerPerceptron {
 
     private void generateWeights(long seed) {
         var random = new Random(seed);
-        for (var i = 0; i < outputLayerSize; i++) {
-            for (var j = 0; j < sensorLayerSize; j++) {
-                this.weights[i][j] = random.nextFloat(0, 1);
-            }
+        var data = this.weights.getData();
+        for (var i = 0; i < data.length; i++) {
+            data[i] = random.nextFloat(0, 1);
         }
     }
 
-    public void train(float[] sensorData, float[] result, float[] target, float speed)
-    {
+    public void train(float[] sensorData, float[] target, float speed) {
+        var sensor = new MatrixF32(1, sensorData.length, sensorData);
+        var result = ((MatrixF32Interface) Ops.multipleTransposed(this.weights, sensor)).getData();
+
+        for (var i = 0; i < result.length; i++) {
+            result[i] = activation(result[i]);
+        }
+
+        var weights = this.weights.getData();
+
         for (var i = 0; i < outputLayerSize; i++) {
             float delta = speed * (target[i] - result[i]);
+            int i1 = i * this.weights.columns;
             for (var j = 0; j < sensorLayerSize; j++) {
-                weights[i][j] += delta * sensorData[j];
+                weights[i1 + j] += delta * sensorData[j];
             }
         }
     }

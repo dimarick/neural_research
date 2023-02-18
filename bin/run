@@ -1,3 +1,4 @@
 #!/bin/bash
 
-MAVEN_OPTS="-Xmx10g -Xms1g -XX:+UseSuperWord" mvn install compile exec:java -Dexec.mainClass=Main
+#MAVEN_OPTS="-Xmx10g -Xms1g -XX:+UseSuperWord" mvn install compile exec:java -Dmaven.test.skip=true -Dexec.mainClass=SingleLayerTest
+MAVEN_OPTS="-Xmx10g -Xms1g -XX:+UseSuperWord" mvn install compile exec:java -Dmaven.test.skip=true -Dexec.mainClass=RosenblattTest

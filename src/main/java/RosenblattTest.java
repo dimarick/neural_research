@@ -2,9 +2,10 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
-public class Main {
+public class RosenblattTest {
 
     public static final float INITIAL_SPEED = 0.03f;
     public static final float SPEED_SCALE = 0.6f;
@@ -27,47 +28,13 @@ public class Main {
 
             System.out.println("Files loaded " + loaded + " ms");
 
-            var p = new SingleLayerPerceptron(28 * 28, 10, 1);
+            var p = new RosenblattPerceptron(28 * 28, 10, 10000, new Random(1));
 
-            var prevFail = (float)trainImages.length + 1;
-            var fail = prevFail - 1;
-            var speed = INITIAL_SPEED;
-            var order = new LinkedList<Integer>();
-
-            for (var i = 0; i < trainImages.length; i++) {
-                order.add(i);
-            }
-
-            for (var epoch = 0; epoch < 40 && (fail / testImages.length) > 0.081; epoch++) {
-                var epochStart = System.currentTimeMillis();
-
-                if (prevFail > fail) {
-                    speed *= 1.2;
-                }
-
-                prevFail = fail;
-
-                Collections.shuffle(order);
-
-                for (var i : order) {
-                    byte label = trainLabels[i];
-                    var result = p.eval(trainImages[i]);
-                    var target = createTargetForLabel(label);
-                    p.train(trainImages[i], result, target, speed);
-                }
-
-                speed *= SPEED_SCALE;
-
-                fail = test(testImages, testLabels, p, new PrintStream(PrintStream.nullOutputStream()));
-
-                var epochTime = System.currentTimeMillis() - epochStart;
-
-                System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + (fail / testImages.length) * 100 + "%");
-            }
+            train(testImages, testLabels, trainImages, trainLabels, p);
 
             var testStart = System.currentTimeMillis();
 
-            fail = test(testImages, testLabels, p, System.out);
+            var fail = test(testImages, testLabels, p, System.out);
 
             System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + (fail / testImages.length) * 100 + "%");
 
@@ -77,7 +44,40 @@ public class Main {
         }
     }
 
-    private static float test(float[][] testImages, byte[] testLabels, SingleLayerPerceptron p, PrintStream output) {
+    private static void train(float[][] testImages, byte[] testLabels, float[][] trainImages, byte[] trainLabels, RosenblattPerceptron p) {
+        var prevFail = (float) trainImages.length + 1;
+        var fail = prevFail - 1;
+        var speed = INITIAL_SPEED * 2;
+        var order = new LinkedList<Integer>();
+
+        for (var i = 0; i < trainImages.length; i++) {
+            order.add(i);
+        }
+
+        for (var epoch = 0; epoch < 10 && (fail / testImages.length) > 0.081; epoch++) {
+            var epochStart = System.currentTimeMillis();
+
+//            prevFail = fail;
+
+            Collections.shuffle(order);
+
+            for (var i : order) {
+                byte label = trainLabels[i];
+                var target = createTargetForLabel(label);
+                p.train(trainImages[i], target, speed);
+            }
+
+            speed *= SPEED_SCALE;
+
+            fail = test(testImages, testLabels, p, new PrintStream(PrintStream.nullOutputStream()));
+
+            var epochTime = System.currentTimeMillis() - epochStart;
+
+            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + (fail / testImages.length) * 100 + "%");
+        }
+    }
+
+    private static float test(float[][] testImages, byte[] testLabels, RosenblattPerceptron p, PrintStream output) {
 
         var fail = 0.0f;
 
