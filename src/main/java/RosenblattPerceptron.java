@@ -1,9 +1,19 @@
 import linear.matrix.MatrixF32;
-import linear.matrix.MatrixF32Interface;
 import linear.matrix.Ops;
 
 import java.util.Random;
 
+/**
+ * Классическая реализации перцептрона Розенблатта
+ * При A = S показывает результат сравнимый с наивной реализацией, что показывает корректность его реализации
+ * Увеличение размера ассоциативного слоя позволяет повышать точность, что недостижимо в наивной реализации
+ * При этом он существенно медленнее работает из-за умножения матриц размерностями S и S*A
+ * Качество распознавания на 7839 А-нейронах составило 380-420 ошибок, что соответствует реализации
+ * из публикации "Rosenblatt Perceptrons for Handwritten Digit Recognition",
+ * однако далее качество не растет (или растет крайне медленно). Здесь, в отличие от их реализации связи S-A полностью
+ * случайны. Опытным путем установлено что выбор разного seed для их генерации влияет на качество результата порядка 10-20%,
+ * также очевидно что оптимальный подбор весов повысит качество еще сильнее.
+ */
 public class RosenblattPerceptron {
     final private int outputLayerSize;
     final private int assocLayerSize;
@@ -26,7 +36,7 @@ public class RosenblattPerceptron {
     public float[] eval(float[] sensorData) {
         final var hiddenResultMatrix = Ops.multipleTransposedConcurrent(sensorLayer, new MatrixF32(1, sensorData.length, sensorData), maxThreads);
 
-        final var hiddenResult = ((MatrixF32Interface) hiddenResultMatrix).getData();
+        final var hiddenResult = hiddenResultMatrix.getData();
 
         for (var i = 0; i < hiddenResult.length; i++) {
             hiddenResult[i] = activationS(hiddenResult[i]);
@@ -34,7 +44,7 @@ public class RosenblattPerceptron {
 
         final var resultMatrix = Ops.multipleTransposedConcurrent(assocLayer, hiddenResultMatrix, maxThreads);
 
-        final var result = ((MatrixF32Interface) resultMatrix).getData();
+        final var result = resultMatrix.getData();
 
         for (var i = 0; i < result.length; i++) {
             result[i] = activationA(result[i]);
@@ -60,26 +70,18 @@ public class RosenblattPerceptron {
 
     private void generateWeightsA(float[] layer, Random random) {
         for (var i = 0; i < layer.length; i++) {
-            layer[i] = random.nextFloat(-127, 128);
+            layer[i] = random.nextFloat(-1, 1);
         }
     }
 
-    public void train(float[] sensorData, float[] target, float speed) {
+    public float[] train(float[] sensorData, float[] target, float speed) {
         final var hiddenResultMatrix = Ops.multipleTransposedConcurrent(sensorLayer, new MatrixF32(1, sensorData.length, sensorData), maxThreads);
-
-        final var hiddenResult = ((MatrixF32Interface) hiddenResultMatrix).getData();
-
-        for (var i = 0; i < hiddenResult.length; i++) {
-            hiddenResult[i] = activationS(hiddenResult[i]);
-        }
-
+        Ops.reLU(hiddenResultMatrix);
         final var resultMatrix = Ops.multipleTransposedConcurrent(assocLayer, hiddenResultMatrix, maxThreads);
+        Ops.logisticFn(resultMatrix);
 
-        final var result = ((MatrixF32Interface) resultMatrix).getData();
-
-        for (var i = 0; i < result.length; i++) {
-            result[i] = activationA(result[i]);
-        }
+        final var result = resultMatrix.getData();
+        final var hiddenResult = hiddenResultMatrix.getData();
 
         for (var i = 0; i < outputLayerSize; i++) {
             float delta = 10 * speed * (target[i] - result[i]);
@@ -87,5 +89,7 @@ public class RosenblattPerceptron {
                 assocLayer.getData()[i * assocLayerSize + j] += delta * hiddenResult[j];
             }
         }
+
+        return result;
     }
 }

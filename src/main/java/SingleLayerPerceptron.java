@@ -1,10 +1,15 @@
 
 import linear.matrix.MatrixF32;
-import linear.matrix.MatrixF32Interface;
 import linear.matrix.Ops;
 
 import java.util.Random;
 
+/**
+ * Наивная реализация перцептрона, упрощеннная версия перцептрона Розенблатта,
+ * в которой объединены S и А слои в один S слой
+ * Существенно выигрывает в производительности (раз в 20 для изображений 28*28, если S = A)
+ * Предел качества распознавания - 8 % ошибок
+ */
 public class SingleLayerPerceptron {
     final private MatrixF32 weights;
     final private int sensorLayerSize;
@@ -20,7 +25,7 @@ public class SingleLayerPerceptron {
 
     public float[] eval(float[] sensorData) {
         var sensor = new MatrixF32(1, sensorData.length, sensorData);
-        var result = ((MatrixF32Interface) Ops.multipleTransposed(this.weights, sensor)).getData();
+        var result = Ops.multipleTransposed(this.weights, sensor).getData();
 
         for (var i = 0; i < result.length; i++) {
             result[i] = activation(result[i]);
@@ -44,7 +49,7 @@ public class SingleLayerPerceptron {
 
     public void train(float[] sensorData, float[] target, float speed) {
         var sensor = new MatrixF32(1, sensorData.length, sensorData);
-        var result = ((MatrixF32Interface) Ops.multipleTransposed(this.weights, sensor)).getData();
+        var result = Ops.multipleTransposed(this.weights, sensor).getData();
 
         for (var i = 0; i < result.length; i++) {
             result[i] = activation(result[i]);
