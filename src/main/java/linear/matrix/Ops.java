@@ -79,6 +79,10 @@ public class Ops {
 
 
     public static MatrixInterface multipleConcurrent(MatrixInterface matrix1, MatrixInterface matrix2, int maxThreads) {
+        if (maxThreads == 1) {
+            return multiple(matrix1, matrix2);
+        }
+
         if (matrix1.getColumns() != matrix2.getRows()) {
             throw new ArrayIndexOutOfBoundsException("incompatible matrix");
         }
@@ -115,6 +119,10 @@ public class Ops {
     }
 
     public static MatrixInterface multipleTransposedConcurrent(MatrixInterface matrix1, MatrixInterface matrix2, int maxThreads) {
+        if (maxThreads == 1) {
+            return multipleTransposed(matrix1, matrix2);
+        }
+
         if (matrix1.getColumns() != matrix2.getColumns()) {
             if (matrix2.getColumns() == 1 && matrix1.getColumns() == matrix2.getRows()) {
                 return multipleTransposedConcurrent(matrix1, transposeVector(matrix2), maxThreads);

@@ -28,7 +28,7 @@ public class RosenblattTest {
 
             System.out.println("Files loaded " + loaded + " ms");
 
-            var p = new RosenblattPerceptron(28 * 28, 10, 10000, new Random(1));
+            var p = new RosenblattPerceptron(28 * 28, 10, 28*28*10, new Random(2), 20);
 
             train(testImages, testLabels, trainImages, trainLabels, p);
 
@@ -54,7 +54,7 @@ public class RosenblattTest {
             order.add(i);
         }
 
-        for (var epoch = 0; epoch < 10 && (fail / testImages.length) > 0.081; epoch++) {
+        for (var epoch = 0; epoch < 10/* && (fail / testImages.length) > 0.081*/; epoch++) {
             var epochStart = System.currentTimeMillis();
 
 //            prevFail = fail;

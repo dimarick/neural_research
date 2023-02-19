@@ -7,12 +7,14 @@ import java.util.Random;
 public class RosenblattPerceptron {
     final private int outputLayerSize;
     final private int assocLayerSize;
+    final private int maxThreads;
     final private MatrixF32 sensorLayer;
     final private MatrixF32 assocLayer;
 
-    public RosenblattPerceptron(int sensorLayerSize, int outputLayerSize, int assocLayerSize, Random random) {
+    public RosenblattPerceptron(int sensorLayerSize, int outputLayerSize, int assocLayerSize, Random random, int maxThreads) {
         this.outputLayerSize = outputLayerSize;
         this.assocLayerSize = assocLayerSize;
+        this.maxThreads = maxThreads;
 
         this.sensorLayer = new MatrixF32(assocLayerSize, sensorLayerSize);
         this.assocLayer = new MatrixF32(outputLayerSize, assocLayerSize);
@@ -22,7 +24,7 @@ public class RosenblattPerceptron {
     }
 
     public float[] eval(float[] sensorData) {
-        final var hiddenResultMatrix = Ops.multipleTransposedConcurrent(sensorLayer, new MatrixF32(1, sensorData.length, sensorData), 20);
+        final var hiddenResultMatrix = Ops.multipleTransposedConcurrent(sensorLayer, new MatrixF32(1, sensorData.length, sensorData), maxThreads);
 
         final var hiddenResult = ((MatrixF32Interface) hiddenResultMatrix).getData();
 
@@ -30,7 +32,7 @@ public class RosenblattPerceptron {
             hiddenResult[i] = activationS(hiddenResult[i]);
         }
 
-        final var resultMatrix = Ops.multipleTransposedConcurrent(assocLayer, hiddenResultMatrix, 20);
+        final var resultMatrix = Ops.multipleTransposedConcurrent(assocLayer, hiddenResultMatrix, maxThreads);
 
         final var result = ((MatrixF32Interface) resultMatrix).getData();
 
@@ -42,7 +44,7 @@ public class RosenblattPerceptron {
     }
 
     private float activationS(float x) {
-        return x > 0.0f ? 1.0f : 0.0f;
+        return x > 0 ? x : 0.0f;
     }
 
     //TODO: implement softmax
@@ -52,7 +54,7 @@ public class RosenblattPerceptron {
 
     private void generateWeightsS(float[] layer, Random random) {
         for (var i = 0; i < layer.length; i++) {
-            layer[i] = random.nextFloat(random.nextInt(-2550,0), random.nextInt(0,2560));
+            layer[i] = random.nextFloat(-1, 1);
         }
     }
 
@@ -63,7 +65,7 @@ public class RosenblattPerceptron {
     }
 
     public void train(float[] sensorData, float[] target, float speed) {
-        final var hiddenResultMatrix = Ops.multipleTransposedConcurrent(sensorLayer, new MatrixF32(1, sensorData.length, sensorData), 20);
+        final var hiddenResultMatrix = Ops.multipleTransposedConcurrent(sensorLayer, new MatrixF32(1, sensorData.length, sensorData), maxThreads);
 
         final var hiddenResult = ((MatrixF32Interface) hiddenResultMatrix).getData();
 
@@ -71,7 +73,7 @@ public class RosenblattPerceptron {
             hiddenResult[i] = activationS(hiddenResult[i]);
         }
 
-        final var resultMatrix = Ops.multipleTransposedConcurrent(assocLayer, hiddenResultMatrix, 20);
+        final var resultMatrix = Ops.multipleTransposedConcurrent(assocLayer, hiddenResultMatrix, maxThreads);
 
         final var result = ((MatrixF32Interface) resultMatrix).getData();
 
