@@ -3,7 +3,7 @@ package linear.matrix;
 public class MatrixF32 implements MatrixF32Interface {
     final int rows;
     final public int columns;
-    final float[] data;
+    float[] data;
 
     public MatrixF32(int rows, int columns, float[] data) {
         this.rows = rows;
@@ -31,5 +31,9 @@ public class MatrixF32 implements MatrixF32Interface {
 
     public float[] getData() {
         return data;
+    }
+
+    public void setData(float[] data) {
+        this.data = data;
     }
 }

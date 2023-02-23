@@ -1,10 +1,13 @@
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
-public class RosenblattTest {
+public class RosenblattTest2 {
 
     private static final float INITIAL_SPEED = 0.6f;
     private static final float SPEED_SCALE = 0.8f;
@@ -27,28 +30,28 @@ public class RosenblattTest {
 
             System.out.println("Files loaded " + loaded + " ms");
 
-            for (var i = 1; i < 10; i++) {
-                System.out.println("Starting test with i " + i + "(" + (2000 * i) + ")");
-                var p = new RosenblattPerceptron(28 * 28, 10, 2000 * i, new Random(i), 1);
-                train(trainImages, trainLabels, p);
+            for (var i = 1; i < 100; i++) {
+                System.out.println("Starting test with seed " + i);
+                var p = new RosenblattPerceptron(28 * 28, 10, (28 * 28 * 10), new Random(i), 20);
+                train(testImages, testLabels, trainImages, trainLabels, p);
 
                 var testStart = System.currentTimeMillis();
 
                 var fail = test(testImages, testLabels, p);
 
-                System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + ((float)fail / testImages.length) * 100 + "%");
+                System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + (fail / testImages.length) * 100 + "%");
             }
 
             for (var i = 1; i < 40; i++) {
                 System.out.println("Starting test with i " + i + "(" + (1000 * i) + ")");
                 var p = new RosenblattPerceptron(28 * 28, 10, 1000 * i, new Random(25), 20);
-                train(trainImages, trainLabels, p);
+                train(testImages, testLabels, trainImages, trainLabels, p);
 
                 var testStart = System.currentTimeMillis();
 
                 var fail = test(testImages, testLabels, p);
 
-                System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + ((float)fail / testImages.length) * 100 + "%");
+                System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + (fail / testImages.length) * 100 + "%");
             }
 
             System.out.println("Success");
@@ -57,7 +60,7 @@ public class RosenblattTest {
         }
     }
 
-    private static void train(float[][] trainImages, byte[] trainLabels, RosenblattPerceptron p) {
+    private static void train(float[][] testImages, byte[] testLabels, float[][] trainImages, byte[] trainLabels, RosenblattPerceptron p) {
         var speed = INITIAL_SPEED;
         var order = new LinkedList<Integer>();
 
@@ -65,8 +68,12 @@ public class RosenblattTest {
             order.add(i);
         }
 
-        for (var epoch = 0; epoch < 7; epoch++) {
-            var fail = 0.0f;
+        var prevFail = testImages.length;
+        var prevState = p.getAssocLayer();
+
+        for (var epoch = 0; epoch < 30; epoch++) {
+            var fail = 0;
+
             var epochStart = System.currentTimeMillis();
 
             // Перемешивание образцов ускоряет сходимость сети
@@ -81,11 +88,21 @@ public class RosenblattTest {
                 }
             }
 
-            speed *= SPEED_SCALE;
+            var testFail = test(testImages, testLabels, p);
 
             var epochTime = System.currentTimeMillis() - epochStart;
 
-            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + (fail / trainImages.length) * 100 + "%");
+            System.out.println("epoch is " + epoch + " done." + epochTime + " ms. Speed was: " + speed + ". Error rate is: " + ((float)fail / trainImages.length) * 100 + "%. Test error rate is: " + ((float)testFail / testImages.length) * 100 + "%");
+
+            if (testFail > prevFail) {
+                p.setAssocLayer(prevState);
+                speed = new Random().nextFloat(speed / 5, speed * 3);
+            } else {
+                prevState = p.getAssocLayer();
+                speed *= SPEED_SCALE;
+            }
+
+            prevFail = testFail;
         }
     }
 

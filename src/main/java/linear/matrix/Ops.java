@@ -1,5 +1,7 @@
 package linear.matrix;
 
+import net.dedekind.blas.Blas;
+
 import java.util.ArrayList;
 
 public class Ops {
@@ -26,16 +28,21 @@ public class Ops {
     }
 
     public static MatrixF32Interface multiple(MatrixF32Interface matrix1, MatrixF32Interface matrix2) {
+        var result = new MatrixF32(matrix1.getRows(), matrix2.getColumns(), new float[matrix1.getRows() * matrix2.getColumns()]);
+
+        return multiple(matrix1, matrix2, result);
+    }
+
+    public static MatrixF32Interface multiple(MatrixF32Interface matrix1, MatrixF32Interface matrix2, MatrixF32Interface result) {
         if (matrix1.getColumns() != matrix2.getRows()) {
             throw new ArrayIndexOutOfBoundsException("incompatible matrix");
         }
 
-        var result = new MatrixF32(matrix1.getRows(), matrix2.getColumns(), new float[matrix1.getRows() * matrix2.getColumns()]);
         float[] data1 = matrix1.getData();
         float[] data2 = matrix2.getData();
         float[] resultData = result.getData();
 
-        multipleF32Range(resultData, matrix1, matrix2, data1, data2, 0, matrix1.getRows());
+        multipleF32RangeBlas(resultData, matrix1, matrix2, data1, data2, 0, matrix1.getRows());
 
         return result;
     }
@@ -62,7 +69,7 @@ public class Ops {
         return result;
     }
 
-    private static MatrixF32Interface transposeVector(MatrixF32Interface matrix) {
+    public static MatrixF32Interface transposeVector(MatrixF32Interface matrix) {
         if (matrix.getRows() > 1 && matrix.getColumns() > 1) {
             throw new RuntimeException("cannot transpose matrix");
         }
@@ -147,11 +154,69 @@ public class Ops {
         return result;
     }
 
-    public static void logisticFn(MatrixF32Interface vector) {
+    public static void logisticFn(MatrixF32Interface vector, float alpha) {
         final var data = vector.getData();
 
         for (var i = 0; i < data.length; i++) {
-            data[i] = 1 / (1 + (float)Math.exp(-data[i]));
+            data[i] = 1 / (1 + (float)Math.exp(-data[i] * alpha));
+        }
+    }
+
+    public static void logisticFnDiff(MatrixF32Interface vector, float alpha) {
+        final var data = vector.getData();
+
+        for (var i = 0; i < data.length; i++) {
+            float sigma = 1 / (1 + (float) Math.exp(-data[i] * alpha));
+            data[i] = sigma * (1 - sigma);
+        }
+    }
+
+    public static void normalize(MatrixF32Interface vector) {
+        final var data = vector.getData();
+        var max = 0.0f;
+        var min = 0.0f;
+
+        for (var i = 0; i < data.length; i++) {
+            max = Math.max(max, data[i]);
+            min = Math.min(min, data[i]);
+        }
+
+        for (var i = 0; i < data.length; i++) {
+            data[i] = (data[i] - min) / (max - min);
+        }
+    }
+
+    public static void softmax(MatrixF32Interface vector, float alpha) {
+        final var data = vector.getData();
+        var sum = 0.0f;
+
+        for (var i = 0; i < data.length; i++) {
+            var exp = (float)Math.max(Math.min(Math.exp(data[i] * alpha), Float.MAX_VALUE), -Float.MAX_VALUE);
+            sum += exp;
+            data[i] = exp;
+        }
+
+        sum = Math.max(Math.min(sum, Float.MAX_VALUE), -Float.MAX_VALUE);
+
+        for (var i = 0; i < data.length; i++) {
+            data[i] /= sum;
+        }
+    }
+
+    public static void softmaxDiff(MatrixF32Interface vector, float alpha) {
+        final var data = vector.getData();
+        var sum = 0.0f;
+
+        for (var i = 0; i < data.length; i++) {
+            var exp = (float)Math.max(Math.min(Math.exp(data[i] * alpha), Float.MAX_VALUE), -Float.MAX_VALUE);
+            sum += exp;
+            data[i] = exp;
+        }
+
+        sum = Math.max(Math.min(sum, Float.MAX_VALUE), -Float.MAX_VALUE);
+
+        for (var i = 0; i < data.length; i++) {
+            data[i] = (data[i] / sum) * (1 - data[i] / sum);
         }
     }
 
@@ -162,6 +227,15 @@ public class Ops {
             //noinspection ManualMinMaxCalculation
             data[i] = data[i] > 0.0f ? data[i] : 0.0f;
         }
+    }
+
+    private static void multipleF32RangeBlas(float[] resultData, MatrixF32Interface matrix1, MatrixF32Interface matrix2, float[] data1, float[] data2, int rangeStart, int rangeLimit) {
+        Blas.getInstance(true).sgemm("N", "N",
+                matrix2.getColumns(), rangeLimit - rangeStart,
+                matrix2.getRows(), 1.0f, data2, 0, matrix2.getColumns(),
+                data1, rangeStart * matrix1.getColumns(), matrix1.getColumns(),
+                0.0f,
+                resultData, rangeStart * matrix2.getColumns(), matrix2.getColumns());
     }
 
     private static void multipleF32Range(float[] resultData, MatrixF32Interface matrix1, MatrixF32Interface matrix2, float[] data1, float[] data2, int rangeStart, int rangeLimit) {
