@@ -32,7 +32,7 @@ public class RosenblattTest2 {
 
             for (var i = 1; i < 100; i++) {
                 System.out.println("Starting test with seed " + i);
-                var p = new RosenblattPerceptron(28 * 28, 10, (28 * 28 * 10), new Random(i), 20);
+                var p = new RosenblattPerceptron(28 * 28, 10, (28 * 28 * 10), new Random(i));
                 train(testImages, testLabels, trainImages, trainLabels, p);
 
                 var testStart = System.currentTimeMillis();
@@ -44,7 +44,7 @@ public class RosenblattTest2 {
 
             for (var i = 1; i < 40; i++) {
                 System.out.println("Starting test with i " + i + "(" + (1000 * i) + ")");
-                var p = new RosenblattPerceptron(28 * 28, 10, 1000 * i, new Random(25), 20);
+                var p = new RosenblattPerceptron(28 * 28, 10, 1000 * i, new Random(25));
                 train(testImages, testLabels, trainImages, trainLabels, p);
 
                 var testStart = System.currentTimeMillis();

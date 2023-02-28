@@ -32,7 +32,7 @@ public class RosenblattTest3 {
 
             for (var i = 0; i < 5; i++) {
                 System.out.println("Starting test with A-size " + (int)(16000 * Math.pow(2, i)));
-                var p = new RosenblattPerceptron(28 * 28, 10, (int)(16000 * Math.pow(2, i)), new Random(25), 20);
+                var p = new RosenblattPerceptron(28 * 28, 10, (int)(16000 * Math.pow(2, i)), new Random(25));
                 train(testImages, testLabels, trainImages, trainLabels, p);
 
                 var testStart = System.currentTimeMillis();

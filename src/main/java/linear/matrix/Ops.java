@@ -3,6 +3,7 @@ package linear.matrix;
 import net.dedekind.blas.Blas;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Ops {
 
@@ -28,12 +29,16 @@ public class Ops {
     }
 
     public static MatrixF32Interface multiple(MatrixF32Interface matrix1, MatrixF32Interface matrix2) {
-        var result = new MatrixF32(matrix1.getRows(), matrix2.getColumns(), new float[matrix1.getRows() * matrix2.getColumns()]);
-
-        return multiple(matrix1, matrix2, result);
+        return multiple(matrix1, matrix2, 1.0f, 0.0f);
     }
 
-    public static MatrixF32Interface multiple(MatrixF32Interface matrix1, MatrixF32Interface matrix2, MatrixF32Interface result) {
+    public static MatrixF32Interface multiple(MatrixF32Interface matrix1, MatrixF32Interface matrix2, float alpha, float beta) {
+        var result = new MatrixF32(matrix1.getRows(), matrix2.getColumns(), new float[matrix1.getRows() * matrix2.getColumns()]);
+
+        return multiple(matrix1, matrix2, result, alpha, beta);
+    }
+
+    public static MatrixF32Interface multiple(MatrixF32Interface matrix1, MatrixF32Interface matrix2, MatrixF32Interface result, float alpha, float beta) {
         if (matrix1.getColumns() != matrix2.getRows()) {
             throw new ArrayIndexOutOfBoundsException("incompatible matrix");
         }
@@ -42,7 +47,7 @@ public class Ops {
         float[] data2 = matrix2.getData();
         float[] resultData = result.getData();
 
-        multipleF32RangeBlas(resultData, matrix1, matrix2, data1, data2, 0, matrix1.getRows());
+        multipleF32RangeBlas(resultData, matrix1, matrix2, data1, data2, alpha, beta);
 
         return result;
     }
@@ -154,23 +159,6 @@ public class Ops {
         return result;
     }
 
-    public static void logisticFn(MatrixF32Interface vector, float alpha) {
-        final var data = vector.getData();
-
-        for (var i = 0; i < data.length; i++) {
-            data[i] = 1 / (1 + (float)Math.exp(-data[i] * alpha));
-        }
-    }
-
-    public static void logisticFnDiff(MatrixF32Interface vector, float alpha) {
-        final var data = vector.getData();
-
-        for (var i = 0; i < data.length; i++) {
-            float sigma = 1 / (1 + (float) Math.exp(-data[i] * alpha));
-            data[i] = sigma * (1 - sigma);
-        }
-    }
-
     public static void normalize(MatrixF32Interface vector) {
         final var data = vector.getData();
         var max = 0.0f;
@@ -191,16 +179,26 @@ public class Ops {
         var sum = 0.0f;
 
         for (var i = 0; i < data.length; i++) {
-            var exp = (float)Math.max(Math.min(Math.exp(data[i] * alpha), Float.MAX_VALUE), -Float.MAX_VALUE);
+            var exp = normalize((float)Math.exp(data[i] * alpha), Float.MAX_VALUE / vector.getData().length);
             sum += exp;
             data[i] = exp;
         }
 
-        sum = Math.max(Math.min(sum, Float.MAX_VALUE), -Float.MAX_VALUE);
+        sum = normalize(sum, Float.MAX_VALUE);
+
+        if (sum == 0.0f) {
+            Arrays.fill(data, 0.0f);
+
+            return;
+        }
 
         for (var i = 0; i < data.length; i++) {
             data[i] /= sum;
         }
+    }
+
+    private static float normalize(float x, float max) {
+        return Math.max(Math.min(x, max), -max);
     }
 
     public static void softmaxDiff(MatrixF32Interface vector, float alpha) {
@@ -208,12 +206,18 @@ public class Ops {
         var sum = 0.0f;
 
         for (var i = 0; i < data.length; i++) {
-            var exp = (float)Math.max(Math.min(Math.exp(data[i] * alpha), Float.MAX_VALUE), -Float.MAX_VALUE);
+            var exp = (float)Math.max(Math.min(Math.exp(data[i] * alpha), Float.MAX_VALUE / vector.getData().length / 2), -Float.MAX_VALUE / vector.getData().length / 2);
             sum += exp;
             data[i] = exp;
         }
 
         sum = Math.max(Math.min(sum, Float.MAX_VALUE), -Float.MAX_VALUE);
+
+        if (sum == 0.0f) {
+            Arrays.fill(data, 0.0f);
+
+            return;
+        }
 
         for (var i = 0; i < data.length; i++) {
             data[i] = (data[i] / sum) * (1 - data[i] / sum);
@@ -229,13 +233,13 @@ public class Ops {
         }
     }
 
-    private static void multipleF32RangeBlas(float[] resultData, MatrixF32Interface matrix1, MatrixF32Interface matrix2, float[] data1, float[] data2, int rangeStart, int rangeLimit) {
+    private static void multipleF32RangeBlas(float[] resultData, MatrixF32Interface matrix1, MatrixF32Interface matrix2, float[] data1, float[] data2, float alpha, float beta) {
         Blas.getInstance(true).sgemm("N", "N",
-                matrix2.getColumns(), rangeLimit - rangeStart,
-                matrix2.getRows(), 1.0f, data2, 0, matrix2.getColumns(),
-                data1, rangeStart * matrix1.getColumns(), matrix1.getColumns(),
-                0.0f,
-                resultData, rangeStart * matrix2.getColumns(), matrix2.getColumns());
+                matrix2.getColumns(), matrix1.getRows(),
+                matrix2.getRows(), alpha, data2, 0, matrix2.getColumns(),
+                data1, 0, matrix1.getColumns(),
+                beta,
+                resultData, 0, matrix2.getColumns());
     }
 
     private static void multipleF32Range(float[] resultData, MatrixF32Interface matrix1, MatrixF32Interface matrix2, float[] data1, float[] data2, int rangeStart, int rangeLimit) {

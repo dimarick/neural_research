@@ -4,22 +4,23 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
-public class RosenblattMultiLevelTest {
+public class RosenblattTest4 {
 
-    private static final float INITIAL_SPEED = 4f;
-    private static final float SPEED_SCALE = 0.85f;
+    private static final float INITIAL_SPEED = 5.0f;
+    private static final float SPEED_SCALE = 0.9f;
 
     public static void main(String[] args) throws RuntimeException {
         try (
-            var testImagesFile = new FileInputStream("src/main/resources/t10k-images-idx3-ubyte.gz");
-            var testLabelsFile = new FileInputStream("src/main/resources/t10k-labels-idx1-ubyte.gz");
-            var trainImagesFile = new FileInputStream("src/main/resources/train-images-idx3-ubyte.gz");
-            var trainLabelsFile = new FileInputStream("src/main/resources/train-labels-idx1-ubyte.gz")
+                var testImagesFile = new FileInputStream("src/main/resources/t10k-images-idx3-ubyte.gz");
+                var testLabelsFile = new FileInputStream("src/main/resources/t10k-labels-idx1-ubyte.gz");
+                var trainImagesFile = new FileInputStream("src/main/resources/train-images-idx3-ubyte.gz");
+                var trainLabelsFile = new FileInputStream("src/main/resources/train-labels-idx1-ubyte.gz")
         ) {
             var start = System.currentTimeMillis();
 
@@ -33,14 +34,13 @@ public class RosenblattMultiLevelTest {
             System.out.println("Files loaded " + loaded + " ms");
 
             var result = trainImages.length;
-            var prevResult = trainImages.length;
 
             var speed = INITIAL_SPEED;
 
-            for (var i = 7; i < 30; i++) {
-                var a = 250 * Math.pow(2, i);
+            for (var i = 0; i < 30; i++) {
+                var a = 32000 * Math.pow(2, i);
                 System.out.println("Starting test with speed " + speed + "(" + a + ")");
-                var p = new RosenblattMultiLevelPerceptron(28 * 28, 10, (int) (a), new Random(1));
+                var p = new RosenblattPerceptron(28 * 28, 10, (int) (a), new SecureRandom(new byte[]{2}));
                 result = train(testImages, testLabels, trainImages, trainLabels, speed, p);
 
                 var testStart = System.currentTimeMillis();
@@ -56,7 +56,7 @@ public class RosenblattMultiLevelTest {
         }
     }
 
-    private static int train(float[][] testImages, byte[] testLabels, float[][] trainImages, byte[] trainLabels, float speed, RosenblattMultiLevelPerceptron p) {
+    private static int train(float[][] testImages, byte[] testLabels, float[][] trainImages, byte[] trainLabels, float speed, PerceptronInterface p) {
         var order = new LinkedList<Integer>();
 
         for (var i = 0; i < trainImages.length; i++) {
@@ -70,37 +70,11 @@ public class RosenblattMultiLevelTest {
         }
 
         var fail = 0;
+        var prevFail = trainImages.length;
+        var prevWeights = p.getAssocLayer();
+        var failRate = 1.0f;
 
-        for (var epoch = 0; epoch < 10; epoch++) {
-            fail = 0;
-            var epochStart = System.currentTimeMillis();
-
-            // Перемешивание образцов ускоряет сходимость сети
-            Collections.shuffle(order);
-
-            for (var i : order) {
-                byte label = trainLabels[i];
-                var target = createTargetForLabel(label);
-                p.trainLayer2(layer1[i], target, speed, false);
-                var r = p.trainLayer2(layer1[i], target, speed, true);
-                if (getAnswer(r) != label) {
-                    fail++;
-                }
-
-            }
-
-            speed *= SPEED_SCALE;
-
-            var testFail = test(testImages, testLabels, p);
-
-            var epochTime = System.currentTimeMillis() - epochStart;
-
-            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + ((float)fail / trainImages.length) * 100 + "%. Test error rate is: " + (testFail / testImages.length) * 100 + "%");
-        }
-
-        speed *= 40;
-
-        for (var epoch = 0; epoch < 40; epoch++) {
+        for (var epoch = 0; epoch < 50; epoch++) {
             fail = 0;
             var epochStart = System.currentTimeMillis();
 
@@ -117,11 +91,25 @@ public class RosenblattMultiLevelTest {
 
             }
 
+            failRate = ((float) fail / trainImages.length);
+
             var testFail = test(testImages, testLabels, p);
 
             var epochTime = System.currentTimeMillis() - epochStart;
+            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + speed + "%. Test error rate is: " + (testFail / testImages.length) * 100 + "%");
 
-            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + ((float)fail / trainImages.length) * 100 + "%. Test error rate is: " + (testFail / testImages.length) * 100 + "%");
+            if (fail < prevFail) {
+                prevWeights = p.getAssocLayer();
+                prevFail = fail;
+                if (speed > INITIAL_SPEED * 0.05f) {
+                    speed *= SPEED_SCALE;
+                }
+            } else if ((float)fail / prevFail < 0.08f) {
+                speed *= new Random().nextFloat(0.9f, 1.25f);
+            } else {
+                p.setAssocLayer(prevWeights);
+                speed *= new Random().nextFloat(0.87f, 1.1f);
+            }
         }
 
 //        var testStart = System.currentTimeMillis();
@@ -135,7 +123,7 @@ public class RosenblattMultiLevelTest {
         return fail;
     }
 
-    private static float test(float[][] testImages, byte[] testLabels, RosenblattMultiLevelPerceptron p) {
+    private static float test(float[][] testImages, byte[] testLabels, PerceptronInterface p) {
 
         var fail = 0.0f;
 

@@ -6,7 +6,7 @@ import java.util.zip.GZIPInputStream;
 
 public class RosenblattTest {
 
-    private static final float INITIAL_SPEED = 0.6f;
+    private static final float INITIAL_SPEED = 5f;
     private static final float SPEED_SCALE = 0.8f;
 
     public static void main(String[] args) throws RuntimeException {
@@ -29,7 +29,7 @@ public class RosenblattTest {
 
             for (var i = 1; i < 10; i++) {
                 System.out.println("Starting test with i " + i + "(" + (2000 * i) + ")");
-                var p = new RosenblattPerceptron(28 * 28, 10, 2000 * i, new Random(i), 1);
+                var p = new RosenblattPerceptron(28 * 28, 10, 2000 * i, new Random(i));
                 train(trainImages, trainLabels, p);
 
                 var testStart = System.currentTimeMillis();
@@ -41,7 +41,7 @@ public class RosenblattTest {
 
             for (var i = 1; i < 40; i++) {
                 System.out.println("Starting test with i " + i + "(" + (1000 * i) + ")");
-                var p = new RosenblattPerceptron(28 * 28, 10, 1000 * i, new Random(25), 20);
+                var p = new RosenblattPerceptron(28 * 28, 10, 1000 * i, new Random(25));
                 train(trainImages, trainLabels, p);
 
                 var testStart = System.currentTimeMillis();
@@ -57,7 +57,7 @@ public class RosenblattTest {
         }
     }
 
-    private static void train(float[][] trainImages, byte[] trainLabels, RosenblattPerceptron p) {
+    private static void train(float[][] trainImages, byte[] trainLabels, PerceptronInterface p) {
         var speed = INITIAL_SPEED;
         var order = new LinkedList<Integer>();
 
@@ -89,7 +89,7 @@ public class RosenblattTest {
         }
     }
 
-    private static int test(float[][] testImages, byte[] testLabels, RosenblattPerceptron p) {
+    private static int test(float[][] testImages, byte[] testLabels, PerceptronInterface p) {
 
         var fail = 0;
 
