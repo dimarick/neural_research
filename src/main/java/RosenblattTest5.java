@@ -12,8 +12,8 @@ import java.util.zip.GZIPInputStream;
 public class RosenblattTest5 {
 
     private static final int EPOCHS = 100;
-    private static final float SPEED_SCALE_UP = 1.03f;
-    private static final float INITIAL_SPEED = 0.3f;
+    private static final float SPEED_SCALE_UP = 1.2f;
+    private static final float INITIAL_SPEED = 0.5f;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -36,7 +36,7 @@ public class RosenblattTest5 {
             var result = trainImages.length;
 
             for (var i = 0; i < 30; i++) {
-                var a = 500 * Math.pow(2, i);
+                var a = 2000 * Math.pow(2, i);
                 var speed = INITIAL_SPEED;
 
                 System.out.println("Starting test with speed " + speed + "(" + a + ")");
@@ -77,10 +77,6 @@ public class RosenblattTest5 {
         var bestEffectiveSpeed = 0.0f;
 
         var effectiveSpeedQueue = new ArrayList<>(Floats.asList(new float[8]));
-        var speedQueue = new ArrayList<Float>(2);
-        speedQueue.add(speed);
-        speedQueue.add(speed);
-        speedQueue.add(speed);
         var speedScale = SPEED_SCALE_UP;
 
         for (var epoch = 0; epoch < EPOCHS; epoch++) {
@@ -118,6 +114,12 @@ public class RosenblattTest5 {
 
             System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + speed + ". Test error rate is: " + testRate * 100 + "%. bias: " + bias + "%. dropout: " + dropout * 100 + "%. Effective speed: " + avgSpeed * 100);
 
+            // Идея автоматического выбора скорости базируется на двух экспериментально установленных фактах:
+            // Эффективность обучения при выборе скорости больше оптимума снижается более резко, чем при
+            // Оптимальная скорость обучения в процессе смещается не слишком быстро и предсказуемо
+            // Поэтому мы начиная с заведома малой скорости ее поднимаем пока скорость не начнет устойчиво падать
+            // После этого откатываем скорость на 4 шага назад и уменьшаем ускорение.
+
             effectiveSpeedQueue.add(effectiveSpeed);
             effectiveSpeedQueue.remove(0);
 
@@ -126,12 +128,10 @@ public class RosenblattTest5 {
             var speed2 = effectiveSpeedQueue.subList(0, effectiveSpeedQueue.size() - 4).stream().mapToDouble(i -> (double)i).average().orElse(0.0);
 
             if (speed1 > speed0 && speed1 > speed2) {
-                speed = speedQueue.get(2) / SPEED_SCALE_UP / SPEED_SCALE_UP;
+                speed = speed / (float)Math.pow(speedScale, 4);
                 speedScale = 1 + 0.9f * (speedScale - 1);
             } else {
                 speed *= speedScale;
-                speedQueue.add(speed);
-                speedQueue.remove(0);
             }
 
 

@@ -68,11 +68,11 @@ public class RosenblattPerceptron {
         return hiddenResultMatrix;
     }
 
-    public float[] trainLayer2(MatrixF32Interface hiddenResultMatrix, float[] target, float speed, float droupoutFactor) {
+    public float[] trainLayer2(MatrixF32Interface hiddenResultMatrix, float[] target, float speed, float dropoutFactor) {
         hiddenResultMatrix = new MatrixF32(hiddenResultMatrix.getData().length, 1, hiddenResultMatrix.getData().clone());
 
-        if (droupoutFactor > 0) {
-            dropout(hiddenResultMatrix.getData(), droupoutFactor);
+        if (dropoutFactor > 0) {
+            dropout(hiddenResultMatrix.getData(), dropoutFactor);
         }
 
         final var resultMatrix = evalLayer2(hiddenResultMatrix);
@@ -85,7 +85,7 @@ public class RosenblattPerceptron {
 
         var delta = new float[outputLayerSize];
 
-        float alpha = speed * loss * (1.0f / (1 - droupoutFactor));
+        float alpha = speed * loss * (1.0f / (1 - dropoutFactor));
 
         for (var i = 0; i < outputLayerSize; i++) {
             delta[i] = alpha * (target[i] - result[i]);
