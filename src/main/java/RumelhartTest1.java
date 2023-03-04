@@ -1,5 +1,4 @@
 import com.google.common.primitives.Floats;
-import linear.matrix.MatrixF32Interface;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -9,7 +8,7 @@ import java.security.SecureRandom;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
-public class RosenblattTest5 {
+public class RumelhartTest1 {
 
     private static final int EPOCHS = 100;
     private static final float SPEED_SCALE_UP = 1.15f;
@@ -36,11 +35,15 @@ public class RosenblattTest5 {
             var result = trainImages.length;
 
             for (var i = 0; i < 30; i++) {
-                var a = 125 * Math.pow(2, i);
+                var a = 2000 * Math.pow(2, i);
                 var speed = INITIAL_SPEED;
 
                 System.out.println("Starting test with speed " + speed + "(" + a + ")");
-                var p = new RosenblattPerceptron(28 * 28, 10, (int) (a), new SecureRandom(new byte[]{3}));
+                var p = new RumelhartPerceptron(new SecureRandom(new byte[]{3}))
+                        .addLayer(28 * 28)
+                        .addLayer((int)a)
+                        .addLayer(10);
+
                 result = train(testImages, testLabels, trainImages, trainLabels, speed, 0.01f, p);
 
                 var testStart = System.currentTimeMillis();
@@ -58,17 +61,11 @@ public class RosenblattTest5 {
         }
     }
 
-    private static int train(float[][] testImages, byte[] testLabels, float[][] trainImages, byte[] trainLabels, float speed, float dropout, RosenblattPerceptron p) {
+    private static int train(float[][] testImages, byte[] testLabels, float[][] trainImages, byte[] trainLabels, float speed, float dropout, RumelhartPerceptron p) {
         var order = new LinkedList<Integer>();
 
         for (var i = 0; i < trainImages.length; i++) {
             order.add(i);
-        }
-
-        var layer1 = new MatrixF32Interface[trainImages.length];
-
-        for (var i = 0; i < trainImages.length; i++) {
-            layer1[i] = p.evalLayer1(trainImages[i]);
         }
 
         var fail = 0;
@@ -89,7 +86,7 @@ public class RosenblattTest5 {
             for (var i : order) {
                 byte label = trainLabels[i];
                 var target = createTargetForLabel(label);
-                var r = p.trainLayer2(layer1[i], target, speed, dropout);
+                var r = p.train(trainImages[i], target, speed, dropout);
                 if (getAnswer(r) != label) {
                     fail++;
                 }
@@ -138,7 +135,6 @@ public class RosenblattTest5 {
                 }
             }
 
-
             prevFail = fail;
 
             if (fail == 0) {
@@ -146,18 +142,10 @@ public class RosenblattTest5 {
             }
         }
 
-//        var testStart = System.currentTimeMillis();
-
-//        var testFail = test(testImages, testLabels, p);
-
-//        var testTime = System.currentTimeMillis() - testStart;
-
-//        System.out.println("test done. " + testTime + " ms. Error rate is: " + (testFail / testImages.length) * 100 + "%");
-
         return fail;
     }
 
-    private static float test(float[][] testImages, byte[] testLabels, RosenblattPerceptron p) {
+    private static float test(float[][] testImages, byte[] testLabels, RumelhartPerceptron p) {
 
         var fail = 0.0f;
 
@@ -168,7 +156,6 @@ public class RosenblattTest5 {
             int answer = getAnswer(result);
 
             if (answer != label) {
-//                output.println("Wrong!!!  i = " + i + ";" + getDistanceEst(result, target) + ", answer is " + answer + "(" + result[answer] + ") != " + label + "    " + Arrays.toString(result));
                 fail++;
             }
         }

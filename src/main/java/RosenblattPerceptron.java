@@ -20,9 +20,8 @@ import java.util.*;
  */
 public class RosenblattPerceptron {
     public static final float ALPHA = 1.0f;
-    public static final float GENERALIZATION_FACTOR = 1.0f;
-    public static final float LOSS_THRESHOLD = 1.0f;
-    public static final float DROPOUT_FACTOR = 0.35f;
+    public static final float GENERALIZATION_FACTOR = 1e-6f;
+    public static final float LOSS_THRESHOLD = 0.7f;
     final private int outputLayerSize;
     final private int assocLayerSize;
     final private Random random;
@@ -91,10 +90,10 @@ public class RosenblattPerceptron {
             delta[i] = alpha * (target[i] - result[i]);
         }
 
-        if (random.nextFloat(0.0f, 1.0f) > 0.9f) {
+        if (random.nextFloat(0.0f, 1.0f) > 0.95f) {
             float l1 = generalizeLasso();
 //            float l1 = generalizeRidge();
-
+//
             generalizationApply(l1);
         }
 
@@ -104,14 +103,14 @@ public class RosenblattPerceptron {
     }
 
 
-    public float[] train(float[] sensorData, float[] target, float speed) {
+    public float[] train(float[] sensorData, float[] target, float speed, float dropoutFactor) {
         final var hiddenResultMatrix = evalLayer1(sensorData);
-        return trainLayer2(hiddenResultMatrix, target, speed, DROPOUT_FACTOR);
+        return trainLayer2(hiddenResultMatrix, target, speed, dropoutFactor);
     }
 
     private void generalizationApply(float l1) {
         var a = assocLayer.getData();
-        for (var i = 0; i < assocLayerSize; i++) {
+        for (var i = 0; i < a.length; i++) {
             a[i] = a[i] > 0 ? Math.max(0, a[i] - l1 * GENERALIZATION_FACTOR) : Math.min(0, a[i] + l1 * GENERALIZATION_FACTOR);
         }
     }
