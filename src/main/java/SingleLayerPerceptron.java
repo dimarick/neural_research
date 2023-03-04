@@ -34,7 +34,6 @@ public class SingleLayerPerceptron {
         return result;
     }
 
-    //TODO: implement softmax
     private float activation(float x) {
         return 1 / (1 + (float)Math.exp(-x));
     }

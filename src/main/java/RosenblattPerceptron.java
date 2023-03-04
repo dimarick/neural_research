@@ -2,12 +2,12 @@ import linear.matrix.MatrixF32;
 import linear.matrix.MatrixF32Interface;
 import linear.matrix.Ops;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Random;
+import java.util.*;
 
 /**
- * Классическая реализации перцептрона Розенблатта
+ * Реализации перцептрона Розенблатта. От классического отличается наличием дропаута, генерализации, небинарного входа.
+ * Все это позволило получить характеристики выше чем в "Rosenblatt Perceptrons for Handwritten Digit Recognition" вплоть до размера слоя 32000.
+ * Дальнейшее совершенствование требует расширения обучаещего набора путем аугментации или другими методами за рамками этой работы.
  * При A = 250 (0,4 * S) показывает результат лучше по сравнению с наивной реализацией, что показывает корректность его реализации
  * Увеличение размера ассоциативного слоя позволяет повышать точность, что недостижимо в наивной реализации
  * При этом он существенно медленнее работает из-за умножения матриц размерностями S и S*A
@@ -16,53 +16,42 @@ import java.util.Random;
  * однако далее качество не растет (или растет крайне медленно). Здесь, в отличие от их реализации связи S-A полностью
  * случайны. Опытным путем установлено что выбор разного seed для их генерации влияет на качество результата порядка 5-10%,
  * также очевидно что оптимальный подбор весов повысит качество еще немного, что видно из исследования. На этом возможности однослойных перцептронов считаю исчерпанными
- * Эффективность до 97,8%
+ * Эффективность до 97,89%
  */
-public class RosenblattPerceptron implements PerceptronInterface {
+public class RosenblattPerceptron {
     public static final float ALPHA = 1.0f;
     public static final float GENERALIZATION_FACTOR = 1.0f;
     public static final float LOSS_THRESHOLD = 1.0f;
-    public static final float DROPOUT_FACTOR = 0.4f;
+    public static final float DROPOUT_FACTOR = 0.35f;
     final private int outputLayerSize;
     final private int assocLayerSize;
+    final private Random random;
     final private MatrixF32 sensorLayer;
     final private MatrixF32 assocLayer;
-    final private ArrayList<Integer> dropList;
 
     public RosenblattPerceptron(int sensorLayerSize, int outputLayerSize, int assocLayerSize, Random random) {
         this.outputLayerSize = outputLayerSize;
         this.assocLayerSize = assocLayerSize;
+        this.random = new Random(random.nextLong());
 
         this.sensorLayer = new MatrixF32(assocLayerSize, sensorLayerSize);
         this.assocLayer = new MatrixF32(outputLayerSize, assocLayerSize);
 
-        generateWeightsS(this.sensorLayer.getData(), random);
-        generateWeightsA(this.assocLayer.getData(), random);
-
-        dropList = new ArrayList<>(assocLayerSize);
-        for (var i = 0; i < assocLayerSize; i++) {
-            dropList.add(i);
-        }
+        generateWeights(this.sensorLayer.getData(), random);
+        generateWeights(this.assocLayer.getData(), random);
     }
 
-    private void generateWeightsS(float[] layer, Random random) {
+    private void generateWeights(float[] layer, Random random) {
         for (var i = 0; i < layer.length; i++) {
             layer[i] = (float)random.nextGaussian(0.0f, 1f);
         }
     }
 
-    private void generateWeightsA(float[] layer, Random random) {
-        for (var i = 0; i < layer.length; i++) {
-            layer[i] = random.nextFloat(-1, 1);
-        }
-    }
-
-    @Override
     public float[] eval(float[] sensorData) {
         final var hiddenResultMatrix = evalLayer1(sensorData);
         final var resultMatrix = evalLayer2(hiddenResultMatrix);
         Ops.normalize(resultMatrix);
-        Ops.softmax(resultMatrix, ALPHA / assocLayerSize);
+        Ops.softmax(resultMatrix, ALPHA);
 
         return resultMatrix.getData();
     }
@@ -71,7 +60,6 @@ public class RosenblattPerceptron implements PerceptronInterface {
         return Ops.multiple(assocLayer, hiddenResultMatrix);
     }
 
-    @Override
     public MatrixF32Interface evalLayer1(float[] sensorData) {
         final var hiddenResultMatrix = Ops.multiple(sensorLayer, new MatrixF32(sensorData.length, 1, sensorData));
         Ops.reLU(hiddenResultMatrix);
@@ -80,35 +68,37 @@ public class RosenblattPerceptron implements PerceptronInterface {
         return hiddenResultMatrix;
     }
 
-    @Override
-    public float[] trainLayer2(MatrixF32Interface hiddenResultMatrix, float[] target, float speed, boolean useDiff) {
+    public float[] trainLayer2(MatrixF32Interface hiddenResultMatrix, float[] target, float speed, float droupoutFactor) {
         hiddenResultMatrix = new MatrixF32(hiddenResultMatrix.getData().length, 1, hiddenResultMatrix.getData().clone());
-        dropout(hiddenResultMatrix.getData(), DROPOUT_FACTOR);
+
+        if (droupoutFactor > 0) {
+            dropout(hiddenResultMatrix.getData(), droupoutFactor);
+        }
+
         final var resultMatrix = evalLayer2(hiddenResultMatrix);
 
         final var result = resultMatrix.getData();
 
-        var diffMatrix = new MatrixF32(resultMatrix.getData().length, 1, resultMatrix.getData().clone());
-        Ops.softmaxDiff(diffMatrix, ALPHA / assocLayerSize / 400);
-        Ops.softmax(resultMatrix, ALPHA / assocLayerSize);
+        Ops.softmax(resultMatrix, ALPHA);
 
         var loss = loss(result, target, LOSS_THRESHOLD);
 
         var delta = new float[outputLayerSize];
 
+        float alpha = speed * loss * (1.0f / (1 - droupoutFactor));
+
         for (var i = 0; i < outputLayerSize; i++) {
-            float v = target[i] - result[i];
-            delta[i] =  v * diffMatrix.getData()[i];
+            delta[i] = alpha * (target[i] - result[i]);
         }
 
-        if (new Random().nextFloat(0.0f, 1.0f) > 0.9f) {
-        float l1 = generalizeLasso();
+        if (random.nextFloat(0.0f, 1.0f) > 0.9f) {
+            float l1 = generalizeLasso();
 //            float l1 = generalizeRidge();
 
             generalizationApply(l1);
         }
 
-        Ops.multiple(new MatrixF32(outputLayerSize, 1, delta), Ops.transposeVector(hiddenResultMatrix), assocLayer, speed * loss * assocLayerSize, 1.0f).getData();
+        Ops.multiple(new MatrixF32(outputLayerSize, 1, delta), Ops.transposeVector(hiddenResultMatrix), assocLayer, 1.0f, 1.0f).getData();
 
         return result;
     }
@@ -116,13 +106,13 @@ public class RosenblattPerceptron implements PerceptronInterface {
 
     public float[] train(float[] sensorData, float[] target, float speed) {
         final var hiddenResultMatrix = evalLayer1(sensorData);
-        return trainLayer2(hiddenResultMatrix, target, speed, false);
+        return trainLayer2(hiddenResultMatrix, target, speed, DROPOUT_FACTOR);
     }
 
     private void generalizationApply(float l1) {
         var a = assocLayer.getData();
         for (var i = 0; i < assocLayerSize; i++) {
-            a[i] = a[i] > 0 ? Math.max(0, a[i] - l1 * GENERALIZATION_FACTOR * assocLayerSize) : Math.min(0, a[i] + l1 * GENERALIZATION_FACTOR * assocLayerSize);
+            a[i] = a[i] > 0 ? Math.max(0, a[i] - l1 * GENERALIZATION_FACTOR) : Math.min(0, a[i] + l1 * GENERALIZATION_FACTOR);
         }
     }
 
@@ -143,13 +133,9 @@ public class RosenblattPerceptron implements PerceptronInterface {
     }
 
     private void dropout(float[] result, float k) {
-        Collections.shuffle(dropList);
-
-        for (var i : dropList.subList(0, (int)(result.length * k))) {
+        for (var i : random.ints((long)(-result.length * Math.log(1 - k)), 0, assocLayerSize).toArray()) {
             result[i] = 0.0f;
         }
-
-        Ops.multiple(new MatrixF32(result.length, 1, result), new MatrixF32(1, 1, new float[]{1.0f / (1 - k)}));
     }
 
     private static int getAnswer(float[] result) {
@@ -169,8 +155,8 @@ public class RosenblattPerceptron implements PerceptronInterface {
         float[] data = assocLayer.getData();
         var result = 0.0f;
 
-        for (var i = 0; i < data.length; i++) {
-            result += Math.abs(data[i]);
+        for (float item : data) {
+            result += Math.abs(item);
         }
 
         return result / data.length;
@@ -180,18 +166,10 @@ public class RosenblattPerceptron implements PerceptronInterface {
         float[] data = assocLayer.getData();
         var result = 0.0f;
 
-        for (var i = 0; i < data.length; i++) {
-            result += data[i] * data[i];
+        for (float item : data) {
+            result += item * item;
         }
 
         return result / data.length;
-    }
-
-    public float[] getAssocLayer() {
-        return assocLayer.getData().clone();
-    }
-
-    public void setAssocLayer(float[] data) {
-        assocLayer.setData(data);
     }
 }

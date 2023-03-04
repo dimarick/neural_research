@@ -6,20 +6,14 @@ import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.ArrayDeque;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
+public class RosenblattTest5 {
 
-/**
- * Определение наилучшей скорости для разных A-size
- */
-public class RosenblattTest4 {
-
-    private static final int EPOCHS = 500;
-    private static final float SPEED_SCALE = 1.15f;
-    private static final float INITIAL_SPEED = 0.001f;
+    private static final int EPOCHS = 100;
+    private static final float SPEED_SCALE_UP = 1.03f;
+    private static final float INITIAL_SPEED = 0.3f;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -41,13 +35,13 @@ public class RosenblattTest4 {
 
             var result = trainImages.length;
 
-            var speed = INITIAL_SPEED;
-
             for (var i = 0; i < 30; i++) {
-                var a = 16000 * Math.pow(2, i);
+                var a = 500 * Math.pow(2, i);
+                var speed = INITIAL_SPEED;
+
                 System.out.println("Starting test with speed " + speed + "(" + a + ")");
                 var p = new RosenblattPerceptron(28 * 28, 10, (int) (a), new SecureRandom(new byte[]{3}));
-                result = train(testImages, testLabels, trainImages, trainLabels, speed, p);
+                result = train(testImages, testLabels, trainImages, trainLabels, speed, 0.02f, p);
 
                 var testStart = System.currentTimeMillis();
 
@@ -64,7 +58,7 @@ public class RosenblattTest4 {
         }
     }
 
-    private static int train(float[][] testImages, byte[] testLabels, float[][] trainImages, byte[] trainLabels, float speed, RosenblattPerceptron p) {
+    private static int train(float[][] testImages, byte[] testLabels, float[][] trainImages, byte[] trainLabels, float speed, float dropout, RosenblattPerceptron p) {
         var order = new LinkedList<Integer>();
 
         for (var i = 0; i < trainImages.length; i++) {
@@ -81,10 +75,13 @@ public class RosenblattTest4 {
         var prevFail = trainImages.length;
         var failRate = 0.1f;
         var bestEffectiveSpeed = 0.0f;
-        var bestSpeed = speed;
-        var bestResult = prevFail;
 
-        var prevSpeedQueue = new ArrayDeque<>(Floats.asList(new float[6]));
+        var effectiveSpeedQueue = new ArrayList<>(Floats.asList(new float[8]));
+        var speedQueue = new ArrayList<Float>(2);
+        speedQueue.add(speed);
+        speedQueue.add(speed);
+        speedQueue.add(speed);
+        var speedScale = SPEED_SCALE_UP;
 
         for (var epoch = 0; epoch < EPOCHS; epoch++) {
             fail = 0;
@@ -93,13 +90,10 @@ public class RosenblattTest4 {
             // Перемешивание образцов ускоряет сходимость сети
             Collections.shuffle(order);
 
-//            var currentSpeed = speed * (float)Math.pow(SPEED_SCALE, epoch % SPEED_RESET_STEPS);
-            var currentSpeed = epoch < 4 ? 0.4f : (speed * (float)Math.pow(SPEED_SCALE, epoch - 3));
-
             for (var i : order) {
                 byte label = trainLabels[i];
                 var target = createTargetForLabel(label);
-                var r = p.trainLayer2(layer1[i], target, currentSpeed, 0);
+                var r = p.trainLayer2(layer1[i], target, speed, dropout);
                 if (getAnswer(r) != label) {
                     fail++;
                 }
@@ -114,29 +108,42 @@ public class RosenblattTest4 {
 
             var effectiveSpeed = (float)prevFail / fail - 1;
 
-            if (epoch > 6) {
-                prevSpeedQueue.add(effectiveSpeed);
-                prevSpeedQueue.poll();
-            }
+            float bias = testRate * 100 - failRate * 100;
 
-            var avgSpeed = (float)prevSpeedQueue.stream().mapToDouble(i -> (double) i).average().orElse(0.0f);
+            var avgSpeed = (float)effectiveSpeedQueue.stream().mapToDouble(i -> (double) i).average().orElse(0.0f);
 
-            if (avgSpeed > bestEffectiveSpeed && epoch > 6) {
+            if (avgSpeed > bestEffectiveSpeed && epoch > 4) {
                 bestEffectiveSpeed = avgSpeed;
-                bestSpeed = speed * (float)Math.pow(SPEED_SCALE, epoch - ((float)prevSpeedQueue.size() / 2));
             }
 
-            if (fail < bestResult) {
-                bestResult = fail;
+            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + speed + ". Test error rate is: " + testRate * 100 + "%. bias: " + bias + "%. dropout: " + dropout * 100 + "%. Effective speed: " + avgSpeed * 100);
+
+            effectiveSpeedQueue.add(effectiveSpeed);
+            effectiveSpeedQueue.remove(0);
+
+            var speed0 = effectiveSpeedQueue.subList(2, effectiveSpeedQueue.size() - 4).stream().mapToDouble(i -> (double)i).average().orElse(0.0);
+            var speed1 = effectiveSpeedQueue.subList(1, effectiveSpeedQueue.size() - 4).stream().mapToDouble(i -> (double)i).average().orElse(0.0);
+            var speed2 = effectiveSpeedQueue.subList(0, effectiveSpeedQueue.size() - 4).stream().mapToDouble(i -> (double)i).average().orElse(0.0);
+
+            if (speed1 > speed0 && speed1 > speed2) {
+                speed = speedQueue.get(2) / SPEED_SCALE_UP / SPEED_SCALE_UP;
+                speedScale = 1 + 0.9f * (speedScale - 1);
+            } else {
+                speed *= speedScale;
+                speedQueue.add(speed);
+                speedQueue.remove(0);
             }
 
-            if ((float)bestResult / fail < 0.7) {
-                break;
-            }
 
             prevFail = fail;
 
-            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + currentSpeed + "(" + speed * (float)Math.pow(SPEED_SCALE, epoch - 3) + "). Test error rate is: " + testRate * 100 + "%. bias: " + (failRate * 100 - testRate * 100) + "%. Effective speed: " + avgSpeed * 100 + "%. Max speed: " + bestEffectiveSpeed * 100 + "% (" + bestSpeed + ")");
+            if (bias > 0.5) {
+                dropout = 1 - (1 - dropout) * 0.99f;
+            }
+
+            if (fail == 0) {
+                break;
+            }
         }
 
 //        var testStart = System.currentTimeMillis();
