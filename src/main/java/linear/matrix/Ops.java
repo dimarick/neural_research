@@ -4,6 +4,7 @@ import net.dedekind.blas.Blas;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 
 public class Ops {
 
@@ -231,6 +232,72 @@ public class Ops {
             //noinspection ManualMinMaxCalculation
             data[i] = data[i] > 0.0f ? data[i] : 0.0f;
         }
+    }
+
+    public static void generalizationApply(float l1, MatrixF32Interface weights, float generalizationFactor) {
+        var a = weights.getData();
+        for (var i = 0; i < a.length; i++) {
+            a[i] = a[i] > 0 ? Math.max(0, a[i] - l1 * generalizationFactor) : Math.min(0, a[i] + l1 * generalizationFactor);
+        }
+    }
+
+    public static float loss(float[] result, float[] target, float threshold) {
+        var a = getAnswer(target);
+
+        var loss = 0.0f;
+
+        for (var i = 0; i < result.length; i++) {
+            if (a == i) {
+                continue;
+            }
+
+            loss = Math.abs(Math.max(0, result[i] - result[a] + threshold));
+        }
+
+        return loss / result.length;
+    }
+
+    public static void dropout(Random random, float[] result, float k) {
+        for (var i : random.ints((long)(-result.length * Math.log(1 - k)), 0, result.length).toArray()) {
+            result[i] = 0.0f;
+        }
+    }
+
+    public static float dropoutRate(float k) {
+        return (1.0f / (1 - k));
+    }
+
+    public static int getAnswer(float[] result) {
+        var a = 0;
+        var max = 0.0f;
+
+        for (var i = 0; i < result.length; i++) {
+            if (result[i] > max) {
+                max = result[i];
+                a = i;
+            }
+        }
+
+        return a;
+    }
+    public static float generalizeLasso(MatrixF32Interface weights) {
+        var result = 0.0f;
+
+        for (float item : weights.getData()) {
+            result += Math.abs(item);
+        }
+
+        return result / weights.getData().length;
+    }
+
+    public static float generalizeRidge(MatrixF32Interface weights) {
+        var result = 0.0f;
+
+        for (float item : weights.getData()) {
+            result += item * item;
+        }
+
+        return result / weights.getData().length;
     }
 
     private static void multipleF32RangeBlas(float[] resultData, MatrixF32Interface matrix1, MatrixF32Interface matrix2, float[] data1, float[] data2, float alpha, float beta) {

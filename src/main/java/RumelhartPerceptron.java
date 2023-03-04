@@ -74,10 +74,6 @@ public class RumelhartPerceptron {
         return result.getData();
     }
 
-    private Layer getLastHiddenLayer() {
-        return hiddenLayers.get(hiddenLayers.size() - 1);
-    }
-
     public float[] train(float[] sensorData, float[] target, float speed, float dropoutFactor) {
         MatrixF32Interface hiddenResult = new MatrixF32(inputLayer.size, 1, sensorData);
         for (var layer : hiddenLayers) {
@@ -85,28 +81,28 @@ public class RumelhartPerceptron {
         }
 
         if (dropoutFactor > 0) {
-            dropout(hiddenResult.getData(), dropoutFactor);
+            Ops.dropout(random, hiddenResult.getData(), dropoutFactor);
         }
 
         var result = Ops.multiple(outputLayer.weights, hiddenResult);
         final var resultData = result.getData();
         Ops.softmax(result, ALPHA);
 
-        var loss = loss(resultData, target, LOSS_THRESHOLD);
+        var loss = Ops.loss(resultData, target, LOSS_THRESHOLD);
 
         var delta = new float[outputLayer.size];
 
-        float alpha = speed * loss * (1.0f / (1 - dropoutFactor));
+        float alpha = speed * loss * Ops.dropoutRate(dropoutFactor);
 
         for (var i = 0; i < outputLayer.size; i++) {
             delta[i] =  alpha * (target[i] - resultData[i]);
         }
 
         if (new Random().nextFloat(0.0f, 1.0f) > 0.9f) {
-            float l1 = generalizeLasso();
-//            float l1 = generalizeRidge();
+            float l1 = Ops.generalizeLasso(outputLayer.weights);
+//            float l1 = Ops.generalizeRidge(outputLayer.weights);
 
-            generalizationApply(l1);
+            Ops.generalizationApply(l1, outputLayer.weights, GENERALIZATION_FACTOR);
         }
 
         Ops.multiple(new MatrixF32(outputLayer.size, 1, delta), Ops.transposeVector(hiddenResult), outputLayer.weights, 1.0f, 1.0f).getData();
@@ -119,69 +115,5 @@ public class RumelhartPerceptron {
         Ops.reLU(result);
         Ops.normalize(result);
         return result;
-    }
-
-    private void generalizationApply(float l1) {
-        var a = outputLayer.weights.getData();
-        for (var i = 0; i < getLastHiddenLayer().size; i++) {
-            a[i] = a[i] > 0 ? Math.max(0, a[i] - l1 * GENERALIZATION_FACTOR) : Math.min(0, a[i] + l1 * GENERALIZATION_FACTOR);
-        }
-    }
-
-    private float loss(float[] result, float[] target, float threshold) {
-        var a = getAnswer(target);
-
-        var loss = 0.0f;
-
-        for (var i = 0; i < result.length; i++) {
-            if (a == i) {
-                continue;
-            }
-
-            loss = Math.abs(Math.max(0, result[i] - result[a] + threshold));
-        }
-
-        return loss / result.length;
-    }
-
-    private void dropout(float[] result, float k) {
-        for (var i : random.ints((long)(-result.length * Math.log(1 - k)), 0, result.length).toArray()) {
-            result[i] = 0.0f;
-        }
-    }
-
-    private static int getAnswer(float[] result) {
-        var a = 0;
-        var max = 0.0f;
-
-        for (var i = 0; i < result.length; i++) {
-            if (result[i] > max) {
-                max = result[i];
-                a = i;
-            }
-        }
-
-        return a;
-    }
-    private float generalizeLasso() {
-        float[] data = outputLayer.weights.getData();
-        var result = 0.0f;
-
-        for (float item : data) {
-            result += Math.abs(item);
-        }
-
-        return result / data.length;
-    }
-
-    private float generalizeRidge() {
-        float[] data = outputLayer.weights.getData();
-        var result = 0.0f;
-
-        for (float item : data) {
-            result += item * item;
-        }
-
-        return result / data.length;
     }
 }

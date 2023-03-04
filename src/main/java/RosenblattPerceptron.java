@@ -23,14 +23,12 @@ public class RosenblattPerceptron {
     public static final float GENERALIZATION_FACTOR = 1e-6f;
     public static final float LOSS_THRESHOLD = 0.7f;
     final private int outputLayerSize;
-    final private int assocLayerSize;
     final private Random random;
     final private MatrixF32 sensorLayer;
     final private MatrixF32 assocLayer;
 
     public RosenblattPerceptron(int sensorLayerSize, int outputLayerSize, int assocLayerSize, Random random) {
         this.outputLayerSize = outputLayerSize;
-        this.assocLayerSize = assocLayerSize;
         this.random = new Random(random.nextLong());
 
         this.sensorLayer = new MatrixF32(assocLayerSize, sensorLayerSize);
@@ -71,7 +69,7 @@ public class RosenblattPerceptron {
         hiddenResultMatrix = new MatrixF32(hiddenResultMatrix.getData().length, 1, hiddenResultMatrix.getData().clone());
 
         if (dropoutFactor > 0) {
-            dropout(hiddenResultMatrix.getData(), dropoutFactor);
+            Ops.dropout(random, hiddenResultMatrix.getData(), dropoutFactor);
         }
 
         final var resultMatrix = evalLayer2(hiddenResultMatrix);
@@ -80,21 +78,21 @@ public class RosenblattPerceptron {
 
         Ops.softmax(resultMatrix, ALPHA);
 
-        var loss = loss(result, target, LOSS_THRESHOLD);
+        var loss = Ops.loss(result, target, LOSS_THRESHOLD);
 
         var delta = new float[outputLayerSize];
 
-        float alpha = speed * loss * (1.0f / (1 - dropoutFactor));
+        float alpha = speed * loss * Ops.dropoutRate(dropoutFactor);
 
         for (var i = 0; i < outputLayerSize; i++) {
             delta[i] = alpha * (target[i] - result[i]);
         }
 
         if (random.nextFloat(0.0f, 1.0f) > 0.95f) {
-            float l1 = generalizeLasso();
-//            float l1 = generalizeRidge();
+            float l1 = Ops.generalizeLasso(assocLayer);
+//            float l1 = generalizeRidge(assocLayer);
 //
-            generalizationApply(l1);
+            Ops.generalizationApply(l1, assocLayer, GENERALIZATION_FACTOR);
         }
 
         Ops.multiple(new MatrixF32(outputLayerSize, 1, delta), Ops.transposeVector(hiddenResultMatrix), assocLayer, 1.0f, 1.0f).getData();
@@ -102,73 +100,8 @@ public class RosenblattPerceptron {
         return result;
     }
 
-
     public float[] train(float[] sensorData, float[] target, float speed, float dropoutFactor) {
         final var hiddenResultMatrix = evalLayer1(sensorData);
         return trainLayer2(hiddenResultMatrix, target, speed, dropoutFactor);
-    }
-
-    private void generalizationApply(float l1) {
-        var a = assocLayer.getData();
-        for (var i = 0; i < a.length; i++) {
-            a[i] = a[i] > 0 ? Math.max(0, a[i] - l1 * GENERALIZATION_FACTOR) : Math.min(0, a[i] + l1 * GENERALIZATION_FACTOR);
-        }
-    }
-
-    private float loss(float[] result, float[] target, float threshold) {
-        var a = getAnswer(target);
-
-        var loss = 0.0f;
-
-        for (var i = 0; i < result.length; i++) {
-            if (a == i) {
-                continue;
-            }
-
-            loss = Math.abs(Math.max(0, result[i] - result[a] + threshold));
-        }
-
-        return loss / result.length;
-    }
-
-    private void dropout(float[] result, float k) {
-        for (var i : random.ints((long)(-result.length * Math.log(1 - k)), 0, assocLayerSize).toArray()) {
-            result[i] = 0.0f;
-        }
-    }
-
-    private static int getAnswer(float[] result) {
-        var a = 0;
-        var max = 0.0f;
-
-        for (var i = 0; i < result.length; i++) {
-            if (result[i] > max) {
-                max = result[i];
-                a = i;
-            }
-        }
-
-        return a;
-    }
-    private float generalizeLasso() {
-        float[] data = assocLayer.getData();
-        var result = 0.0f;
-
-        for (float item : data) {
-            result += Math.abs(item);
-        }
-
-        return result / data.length;
-    }
-
-    private float generalizeRidge() {
-        float[] data = assocLayer.getData();
-        var result = 0.0f;
-
-        for (float item : data) {
-            result += item * item;
-        }
-
-        return result / data.length;
     }
 }

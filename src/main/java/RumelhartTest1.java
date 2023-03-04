@@ -127,9 +127,11 @@ public class RumelhartTest1 {
             if (bias > 1.0) {
                 dropout = 1 - (1 - dropout) * 0.99f;
             } else {
-                if ((speed1 > speed0 && speed1 > speed2) || (speed0 < 0 && speed1 < 0 && speed2 < 0)) {
+                if (speed1 > speed0 && speed1 > speed2) {
                     speed = speed / (float) Math.pow(speedScale, 5);
                     speedScale = 1 + 0.9f * (speedScale - 1);
+                } else if (speed0 < 0 && speed1 < 0 && speed2 < 0) {
+                    speed = speed / (float) Math.pow(speedScale, 4);
                 } else {
                     speed *= speedScale;
                 }
