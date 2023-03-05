@@ -202,8 +202,8 @@ public class Ops {
         return Math.max(Math.min(x, max), -max);
     }
 
-    public static void softmaxDiff(MatrixF32Interface vector, float alpha) {
-        final var data = vector.getData();
+    public static float[] softmaxDiff(MatrixF32Interface vector, float alpha) {
+        final var data = vector.getData().clone();
         var sum = 0.0f;
 
         for (var i = 0; i < data.length; i++) {
@@ -217,12 +217,14 @@ public class Ops {
         if (sum == 0.0f) {
             Arrays.fill(data, 0.0f);
 
-            return;
+            return data;
         }
 
         for (var i = 0; i < data.length; i++) {
             data[i] = (data[i] / sum) * (1 - data[i] / sum);
         }
+
+        return data;
     }
 
     public static void reLU(MatrixF32Interface vector) {

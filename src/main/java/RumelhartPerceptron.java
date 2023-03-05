@@ -22,7 +22,6 @@ public class RumelhartPerceptron {
 
     public static final float ALPHA = 1.0f;
     public static final float GENERALIZATION_FACTOR = 1e-6f;
-    public static final float LOSS_THRESHOLD = 0.7f;
 
     final private ArrayList<Layer> hiddenLayers = new ArrayList<>();
     private Layer inputLayer;
@@ -80,23 +79,24 @@ public class RumelhartPerceptron {
             hiddenResult = evalLayer(hiddenResult, layer);
         }
 
+        float[] hiddenData = hiddenResult.getData();
         if (dropoutFactor > 0) {
-            Ops.dropout(random, hiddenResult.getData(), dropoutFactor);
+            Ops.dropout(random, hiddenData, dropoutFactor);
         }
 
         var result = Ops.multiple(outputLayer.weights, hiddenResult);
         final var resultData = result.getData();
         Ops.softmax(result, ALPHA);
-
-        var loss = Ops.loss(resultData, target, LOSS_THRESHOLD);
-
+        var diff = Ops.softmaxDiff(result, ALPHA);
         var delta = new float[outputLayer.size];
 
-        float alpha = speed * loss * Ops.dropoutRate(dropoutFactor);
+        float alpha = speed * Ops.dropoutRate(dropoutFactor);
 
         for (var i = 0; i < outputLayer.size; i++) {
-            delta[i] =  alpha * (target[i] - resultData[i]);
+            delta[i] = -alpha * (result.getData()[i] - target[i]) * diff[i];
         }
+
+        Ops.multiple(new MatrixF32(outputLayer.size, 1, delta), Ops.transposeVector(hiddenResult), outputLayer.weights, 1.0f, 1.0f).getData();
 
         if (new Random().nextFloat(0.0f, 1.0f) > 0.9f) {
             float l1 = Ops.generalizeLasso(outputLayer.weights);
@@ -104,8 +104,6 @@ public class RumelhartPerceptron {
 
             Ops.generalizationApply(l1, outputLayer.weights, GENERALIZATION_FACTOR);
         }
-
-        Ops.multiple(new MatrixF32(outputLayer.size, 1, delta), Ops.transposeVector(hiddenResult), outputLayer.weights, 1.0f, 1.0f).getData();
 
         return resultData;
     }
