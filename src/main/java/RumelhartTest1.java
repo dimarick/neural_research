@@ -1,4 +1,5 @@
 import com.google.common.primitives.Floats;
+import neural.NeuralAlgo;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -10,8 +11,8 @@ import java.util.zip.GZIPInputStream;
 
 public class RumelhartTest1 {
 
-    private static final int EPOCHS = 100;
-    private static final float SPEED_SCALE_UP = 1.15f;
+    private static final int EPOCHS = 50;
+    private static final float SPEED_SCALE_UP = 1.05f;
     private static final float INITIAL_SPEED = 0.3f;
 
     public static void main(String[] args) throws RuntimeException {
@@ -35,13 +36,17 @@ public class RumelhartTest1 {
             var result = trainImages.length;
 
             for (var i = 0; i < 30; i++) {
-                var a = 1000 * Math.pow(2, i);
+                var a = 250 * Math.pow(2, i);
                 var speed = INITIAL_SPEED;
 
                 System.out.println("Starting test with speed " + speed + "(" + a + ")");
                 var p = new RumelhartPerceptron(new SecureRandom(new byte[]{3}))
                         .addLayer(28 * 28)
-                        .addLayer((int)a)
+                        .addLayer((int)a, r -> {
+                            NeuralAlgo.reLU(r);
+                            NeuralAlgo.normalize(r);
+                        })
+//                        .addLayer(40)
                         .addLayer(10);
 
                 result = train(testImages, testLabels, trainImages, trainLabels, speed, 0.01f, p);
@@ -128,10 +133,10 @@ public class RumelhartTest1 {
                 dropout = 1 - (1 - dropout) * 0.99f;
             } else {
                 if (speed1 > speed0 && speed1 > speed2) {
-                    speed = speed / (float) Math.pow(speedScale, 5);
+                    speed = speed / (float) Math.pow(speedScale, 6);
                     speedScale = 1 + 0.9f * (speedScale - 1);
-                } else if (speed0 < 0 && speed1 < 0 && speed2 < 0) {
-                    speed = speed / (float) Math.pow(speedScale, 4);
+                } else if (speed0 < 0 && speed1 < 0) {
+                    speed = speed / (float) Math.pow(speedScale, 5);
                 } else {
                     speed *= speedScale;
                 }

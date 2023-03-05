@@ -1,6 +1,7 @@
 import linear.matrix.MatrixF32;
 import linear.matrix.MatrixF32Interface;
 import linear.matrix.Ops;
+import neural.NeuralAlgo;
 
 import java.util.*;
 
@@ -47,8 +48,8 @@ public class RosenblattPerceptron {
     public float[] eval(float[] sensorData) {
         final var hiddenResultMatrix = evalLayer1(sensorData);
         final var resultMatrix = evalLayer2(hiddenResultMatrix);
-        Ops.normalize(resultMatrix);
-        Ops.softmax(resultMatrix, ALPHA);
+        NeuralAlgo.normalize(resultMatrix);
+        NeuralAlgo.softmax(resultMatrix, ALPHA);
 
         return resultMatrix.getData();
     }
@@ -59,8 +60,8 @@ public class RosenblattPerceptron {
 
     public MatrixF32Interface evalLayer1(float[] sensorData) {
         final var hiddenResultMatrix = Ops.multiple(sensorLayer, new MatrixF32(sensorData.length, 1, sensorData));
-        Ops.reLU(hiddenResultMatrix);
-        Ops.normalize(hiddenResultMatrix);
+        NeuralAlgo.reLU(hiddenResultMatrix);
+        NeuralAlgo.normalize(hiddenResultMatrix);
 
         return hiddenResultMatrix;
     }
@@ -69,33 +70,30 @@ public class RosenblattPerceptron {
         hiddenResultMatrix = new MatrixF32(hiddenResultMatrix.getData().length, 1, hiddenResultMatrix.getData().clone());
 
         if (dropoutFactor > 0) {
-            Ops.dropout(random, hiddenResultMatrix.getData(), dropoutFactor);
+            NeuralAlgo.dropout(random, hiddenResultMatrix.getData(), dropoutFactor);
         }
 
         final var resultMatrix = evalLayer2(hiddenResultMatrix);
 
         final var result = resultMatrix.getData();
 
-        Ops.softmax(resultMatrix, ALPHA);
+        NeuralAlgo.softmax(resultMatrix, ALPHA);
 
-        var loss = Ops.loss(result, target, LOSS_THRESHOLD);
-
-        var delta = new float[outputLayerSize];
-
-        float alpha = speed * loss * Ops.dropoutRate(dropoutFactor);
-
-        for (var i = 0; i < outputLayerSize; i++) {
-            delta[i] = alpha * (target[i] - result[i]);
-        }
+        NeuralAlgo.deltaCorrection(
+                speed * NeuralAlgo.dropoutRate(dropoutFactor),
+                (r, t) -> NeuralAlgo.loss(r.getData(), t, LOSS_THRESHOLD),
+                resultMatrix,
+                target,
+                hiddenResultMatrix,
+                assocLayer
+        );
 
         if (random.nextFloat(0.0f, 1.0f) > 0.95f) {
-            float l1 = Ops.generalizeLasso(assocLayer);
+            float l1 = NeuralAlgo.generalizeLasso(assocLayer);
 //            float l1 = generalizeRidge(assocLayer);
 //
-            Ops.generalizationApply(l1, assocLayer, GENERALIZATION_FACTOR);
+            NeuralAlgo.generalizationApply(l1, assocLayer, GENERALIZATION_FACTOR);
         }
-
-        Ops.multiple(new MatrixF32(outputLayerSize, 1, delta), Ops.transposeVector(hiddenResultMatrix), assocLayer, 1.0f, 1.0f).getData();
 
         return result;
     }

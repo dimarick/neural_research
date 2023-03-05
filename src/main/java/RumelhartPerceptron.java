@@ -1,6 +1,7 @@
 import linear.matrix.MatrixF32;
 import linear.matrix.MatrixF32Interface;
 import linear.matrix.Ops;
+import neural.NeuralAlgo;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -9,13 +10,19 @@ import java.util.Random;
  * Реализация многослойного перцептрона с обратным распространением ошибки
  */
 public class RumelhartPerceptron {
+    public interface ActivationFunction {
+        void apply(MatrixF32Interface value);
+    }
+
     private class Layer {
         final private int size;
         final private MatrixF32 weights;
+        private ActivationFunction activationFunction;
 
-        public Layer(int size, MatrixF32 weights) {
+        public Layer(int size, MatrixF32 weights, ActivationFunction activationFunction) {
             this.size = size;
             this.weights = weights;
+            this.activationFunction = activationFunction;
         }
     }
 
@@ -31,18 +38,18 @@ public class RumelhartPerceptron {
         this.random = random;
     }
 
-    public RumelhartPerceptron addLayer(int size) {
+    public RumelhartPerceptron addLayer(int size, ActivationFunction activationFunction) {
         if (inputLayer == null) {
-            inputLayer = new Layer(size, null);
+            inputLayer = new Layer(size, null, activationFunction);
 
             return this;
         }
 
         var previousLayer = outputLayer != null ? outputLayer : inputLayer;
 
-        var layer = new Layer(size, new MatrixF32(size, previousLayer.size));
+        var layer = new Layer(size, new MatrixF32(size, previousLayer.size), activationFunction);
 
-        generateWeights(layer.weights.getData(), random);
+        generateWeights(layer.weights.getData(), random, size);
 
         if (outputLayer != null) {
             hiddenLayers.add(outputLayer);
@@ -53,9 +60,15 @@ public class RumelhartPerceptron {
         return this;
     }
 
-    private void generateWeights(float[] layer, Random random) {
+    public RumelhartPerceptron addLayer(int size) {
+        return addLayer(size, r -> {
+            NeuralAlgo.softmax(r, ALPHA);
+        });
+    }
+
+    private void generateWeights(float[] layer, Random random, int size) {
         for (var i = 0; i < layer.length; i++) {
-            layer[i] = (float)random.nextGaussian(0.0f, 1f);
+            layer[i] = (float)random.nextGaussian(0.0f, 1f / size);
         }
     }
 
@@ -67,51 +80,108 @@ public class RumelhartPerceptron {
         }
 
         result = Ops.multiple(outputLayer.weights, result);
-        Ops.normalize(result);
-        Ops.softmax(result, ALPHA);
+        NeuralAlgo.normalize(result);
+        NeuralAlgo.softmax(result, ALPHA);
 
         return result.getData();
     }
 
     public float[] train(float[] sensorData, float[] target, float speed, float dropoutFactor) {
         MatrixF32Interface hiddenResult = new MatrixF32(inputLayer.size, 1, sensorData);
-        for (var layer : hiddenLayers) {
+        MatrixF32Interface[] hiddenResults = new MatrixF32[hiddenLayers.size()];
+        for (int i = 0; i < hiddenLayers.size(); i++) {
+            hiddenResults[i] = hiddenResult;
+            Layer layer = hiddenLayers.get(i);
             hiddenResult = evalLayer(hiddenResult, layer);
         }
 
         float[] hiddenData = hiddenResult.getData();
-        if (dropoutFactor > 0) {
-            Ops.dropout(random, hiddenData, dropoutFactor);
-        }
+//        if (dropoutFactor > 0) {
+//            NeuralAlgo.dropout(random, hiddenData, dropoutFactor);
+//        }
+
 
         var result = Ops.multiple(outputLayer.weights, hiddenResult);
         final var resultData = result.getData();
-        Ops.softmax(result, ALPHA);
-        var diff = Ops.softmaxDiff(result, ALPHA);
-        var delta = new float[outputLayer.size];
+        var loss= NeuralAlgo.loss(resultData, target, 0.9f);
 
-        float alpha = speed * Ops.dropoutRate(dropoutFactor);
-
-        for (var i = 0; i < outputLayer.size; i++) {
-            delta[i] = -alpha * (result.getData()[i] - target[i]) * diff[i];
+        if (loss == 0) {
+            return resultData;
         }
 
-        Ops.multiple(new MatrixF32(outputLayer.size, 1, delta), Ops.transposeVector(hiddenResult), outputLayer.weights, 1.0f, 1.0f).getData();
+        outputLayer.activationFunction.apply(result);
+
+        var diff = NeuralAlgo.softmaxDiff(result, ALPHA);
+        var error = Ops.subtract(result.getData(), target);
+
+        var nextLayerResult = result.getData();
+        var nextLayer = outputLayer.weights.getData();
+        var nextLayerLoss = error;
+        var currentResult = hiddenResult;
+
+        for (var i = hiddenLayers.size() - 1; i >= 0; i--) {
+
+            var layerError = new float[currentResult.getData().length];
+
+            var currentResultDiff = NeuralAlgo.softmaxDiff(currentResult, ALPHA);
+
+            for (var j = 0; j < layerError.length; j++) {
+                var sum = 0.0f;
+                for (var k = 0; k < nextLayerResult.length; k++) {
+                    sum += nextLayerLoss[k] * nextLayer[k * currentResult.getData().length + j];
+                }
+
+                layerError[j] = currentResultDiff[j] * sum;
+            }
+
+            var w = hiddenLayers.get(i).weights.getData();
+
+            int size = i > 0 ? hiddenLayers.get(i - 1).size : inputLayer.size;
+            for (var j = 0; j < layerError.length; j++) {
+                for (var l = 0; l < size; l++) {
+                    w[j * size + l] += -speed * loss * hiddenResults[i].getData()[l] * layerError[j];
+                }
+            }
+
+            nextLayerResult = currentResult.getData();
+            nextLayer = hiddenLayers.get(i).weights.getData();
+            nextLayerLoss = layerError;
+            currentResult = hiddenResults[i];
+        }
+
+        NeuralAlgo.sdg(
+                speed * loss * NeuralAlgo.dropoutRate(dropoutFactor),
+                diff,
+                error,
+                hiddenResult,
+                outputLayer.weights
+        );
+
+
+        for (var i = hiddenLayers.size() - 1; i > 0; i--) {
+
+            if (new Random().nextFloat(0.0f, 1.0f) > 0.9f) {
+                float l1 = NeuralAlgo.generalizeLasso(hiddenLayers.get(i).weights);
+//                float l1 = NeuralAlgo.generalizeRidge(hiddenLayers.get(i).weights);
+
+                NeuralAlgo.generalizationApply(l1, hiddenLayers.get(i).weights, GENERALIZATION_FACTOR);
+            }
+        }
 
         if (new Random().nextFloat(0.0f, 1.0f) > 0.9f) {
-            float l1 = Ops.generalizeLasso(outputLayer.weights);
-//            float l1 = Ops.generalizeRidge(outputLayer.weights);
+            float l1 = NeuralAlgo.generalizeLasso(outputLayer.weights);
+//            float l1 = NeuralAlgo.generalizeRidge(outputLayer.weights);
 
-            Ops.generalizationApply(l1, outputLayer.weights, GENERALIZATION_FACTOR);
+            NeuralAlgo.generalizationApply(l1, outputLayer.weights, GENERALIZATION_FACTOR);
         }
 
         return resultData;
     }
 
     private static MatrixF32Interface evalLayer(MatrixF32Interface result, Layer layer) {
-        result = Ops.multiple(layer.weights, result, 1.0f, 0.0f);
-        Ops.reLU(result);
-        Ops.normalize(result);
-        return result;
+        var r = Ops.multiple(layer.weights, result, 1.0f, 0.0f);
+        layer.activationFunction.apply(r);
+
+        return r;
     }
 }
