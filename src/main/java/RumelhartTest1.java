@@ -11,9 +11,10 @@ import java.util.zip.GZIPInputStream;
 
 public class RumelhartTest1 {
 
-    private static final int EPOCHS = 50;
-    private static final float SPEED_SCALE_UP = 1.05f;
-    private static final float INITIAL_SPEED = 0.3f;
+    private static final int EPOCHS = 100;
+    private static final float SPEED_SCALE_UP = 1.01f;
+    private static final float SPEED_SCALE_DOWN = 0.9f;
+    private static final float INITIAL_SPEED = 0.2f;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -36,15 +37,14 @@ public class RumelhartTest1 {
             var result = trainImages.length;
 
             for (var i = 0; i < 30; i++) {
-                var a = 250 * Math.pow(2, i);
-                var speed = INITIAL_SPEED;
+                var a = 10 * Math.pow(2, i);
+                var speed = INITIAL_SPEED * (float)Math.pow(1.2, i);
 
                 System.out.println("Starting test with speed " + speed + "(" + a + ")");
                 var p = new RumelhartPerceptron(new SecureRandom(new byte[]{3}))
                         .addLayer(28 * 28)
                         .addLayer((int)a, r -> {
                             NeuralAlgo.reLU(r);
-                            NeuralAlgo.normalize(r);
                         })
 //                        .addLayer(40)
                         .addLayer(10);
@@ -78,7 +78,7 @@ public class RumelhartTest1 {
         var failRate = 0.1f;
         var bestEffectiveSpeed = 0.0f;
 
-        var effectiveSpeedQueue = new ArrayList<>(Floats.asList(new float[8]));
+        var effectiveSpeedQueue = new ArrayList<>(Floats.asList(new float[6]));
         var speedScale = SPEED_SCALE_UP;
 
         for (var epoch = 0; epoch < EPOCHS; epoch++) {
@@ -91,7 +91,7 @@ public class RumelhartTest1 {
             for (var i : order) {
                 byte label = trainLabels[i];
                 var target = createTargetForLabel(label);
-                var r = p.train(trainImages[i], target, speed, dropout);
+                var r = p.train(trainImages[i], target, speed, 0* dropout);
                 if (getAnswer(r) != label) {
                     fail++;
                 }
@@ -129,14 +129,14 @@ public class RumelhartTest1 {
             var speed1 = effectiveSpeedQueue.subList(1, effectiveSpeedQueue.size() - 3).stream().mapToDouble(i -> (double)i).average().orElse(0.0);
             var speed2 = effectiveSpeedQueue.subList(0, effectiveSpeedQueue.size() - 3).stream().mapToDouble(i -> (double)i).average().orElse(0.0);
 
-            if (bias > 1.0) {
-                dropout = 1 - (1 - dropout) * 0.99f;
+            if (speed1 > speed0 && speed2 > speed1) {
+                speed = speed * SPEED_SCALE_DOWN;
+                speedScale = 1 + 0.9f * (speedScale - 1);
+            } else if (speed0 < 0 && speed1 < 0) {
+                speed = speed * SPEED_SCALE_DOWN;
             } else {
-                if (speed1 > speed0 && speed1 > speed2) {
-                    speed = speed / (float) Math.pow(speedScale, 6);
-                    speedScale = 1 + 0.9f * (speedScale - 1);
-                } else if (speed0 < 0 && speed1 < 0) {
-                    speed = speed / (float) Math.pow(speedScale, 5);
+                if (bias > 1.0) {
+                    dropout = 1 - (1 - dropout) * 0.99f;
                 } else {
                     speed *= speedScale;
                 }

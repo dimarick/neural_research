@@ -28,7 +28,7 @@ public class RumelhartPerceptron {
 
 
     public static final float ALPHA = 1.0f;
-    public static final float GENERALIZATION_FACTOR = 1e-6f;
+    public static final float GENERALIZATION_FACTOR = 1e-4f;
 
     final private ArrayList<Layer> hiddenLayers = new ArrayList<>();
     private Layer inputLayer;
@@ -96,20 +96,19 @@ public class RumelhartPerceptron {
         }
 
         float[] hiddenData = hiddenResult.getData();
-//        if (dropoutFactor > 0) {
-//            NeuralAlgo.dropout(random, hiddenData, dropoutFactor);
-//        }
-
+        if (dropoutFactor > 0) {
+            NeuralAlgo.dropout(random, hiddenData, dropoutFactor);
+        }
 
         var result = Ops.multiple(outputLayer.weights, hiddenResult);
+        outputLayer.activationFunction.apply(result);
+
         final var resultData = result.getData();
         var loss= NeuralAlgo.loss(resultData, target, 0.9f);
 
         if (loss == 0) {
             return resultData;
         }
-
-        outputLayer.activationFunction.apply(result);
 
         var diff = NeuralAlgo.softmaxDiff(result, ALPHA);
         var error = Ops.subtract(result.getData(), target);
@@ -123,7 +122,7 @@ public class RumelhartPerceptron {
 
             var layerError = new float[currentResult.getData().length];
 
-            var currentResultDiff = NeuralAlgo.softmaxDiff(currentResult, ALPHA);
+            var currentResultDiff = NeuralAlgo.reLUDiff(currentResult);
 
             for (var j = 0; j < layerError.length; j++) {
                 var sum = 0.0f;
@@ -139,7 +138,7 @@ public class RumelhartPerceptron {
             int size = i > 0 ? hiddenLayers.get(i - 1).size : inputLayer.size;
             for (var j = 0; j < layerError.length; j++) {
                 for (var l = 0; l < size; l++) {
-                    w[j * size + l] += -speed * loss * hiddenResults[i].getData()[l] * layerError[j];
+                    w[j * size + l] += -speed * loss * hiddenResults[i].getData()[l] * layerError[j] * 0.01f;
                 }
             }
 
@@ -180,6 +179,7 @@ public class RumelhartPerceptron {
 
     private static MatrixF32Interface evalLayer(MatrixF32Interface result, Layer layer) {
         var r = Ops.multiple(layer.weights, result, 1.0f, 0.0f);
+
         layer.activationFunction.apply(r);
 
         return r;
