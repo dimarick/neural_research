@@ -1,5 +1,4 @@
 import linear.matrix.MatrixF32;
-import linear.matrix.MatrixF32Interface;
 import linear.matrix.Ops;
 import neural.NeuralAlgo;
 
@@ -11,13 +10,13 @@ import java.util.Random;
  */
 public class RumelhartPerceptron {
     public interface ActivationFunction {
-        void apply(MatrixF32Interface value);
+        void apply(MatrixF32 value);
     }
 
-    private class Layer {
+    private static class Layer {
         final private int size;
         final private MatrixF32 weights;
-        private ActivationFunction activationFunction;
+        final private ActivationFunction activationFunction;
 
         public Layer(int size, MatrixF32 weights, ActivationFunction activationFunction) {
             this.size = size;
@@ -73,7 +72,7 @@ public class RumelhartPerceptron {
     }
 
     public float[] eval(float[] sensorData) {
-        MatrixF32Interface result = new MatrixF32(inputLayer.size, 1, sensorData);
+        MatrixF32 result = new MatrixF32(inputLayer.size, 1, sensorData);
 
         for (var layer : hiddenLayers) {
             result = evalLayer(result, layer);
@@ -87,8 +86,8 @@ public class RumelhartPerceptron {
     }
 
     public float[] train(float[] sensorData, float[] target, float speed, float dropoutFactor) {
-        MatrixF32Interface hiddenResult = new MatrixF32(inputLayer.size, 1, sensorData);
-        MatrixF32Interface[] hiddenResults = new MatrixF32[hiddenLayers.size()];
+        MatrixF32 hiddenResult = new MatrixF32(inputLayer.size, 1, sensorData);
+        MatrixF32[] hiddenResults = new MatrixF32[hiddenLayers.size()];
         for (int i = 0; i < hiddenLayers.size(); i++) {
             hiddenResults[i] = hiddenResult;
             Layer layer = hiddenLayers.get(i);
@@ -138,7 +137,7 @@ public class RumelhartPerceptron {
             int size = i > 0 ? hiddenLayers.get(i - 1).size : inputLayer.size;
             for (var j = 0; j < layerError.length; j++) {
                 for (var l = 0; l < size; l++) {
-                    w[j * size + l] += -speed * loss * hiddenResults[i].getData()[l] * layerError[j] * 0.01f;
+                    w[j * size + l] += -speed * loss * hiddenResults[i].getData()[l] * layerError[j] / Math.sqrt(size);
                 }
             }
 
@@ -177,7 +176,7 @@ public class RumelhartPerceptron {
         return resultData;
     }
 
-    private static MatrixF32Interface evalLayer(MatrixF32Interface result, Layer layer) {
+    private static MatrixF32 evalLayer(MatrixF32 result, Layer layer) {
         var r = Ops.multiple(layer.weights, result, 1.0f, 0.0f);
 
         layer.activationFunction.apply(r);

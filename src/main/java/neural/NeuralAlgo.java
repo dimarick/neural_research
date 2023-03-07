@@ -1,7 +1,6 @@
 package neural;
 
 import linear.matrix.MatrixF32;
-import linear.matrix.MatrixF32Interface;
 import linear.matrix.Ops;
 
 import java.util.Arrays;
@@ -9,7 +8,7 @@ import java.util.Random;
 
 public class NeuralAlgo {
 
-    public static void generalizationApply(float l1, MatrixF32Interface weights, float generalizationFactor) {
+    public static void generalizationApply(float l1, MatrixF32 weights, float generalizationFactor) {
         var a = weights.getData();
         for (var i = 0; i < a.length; i++) {
             a[i] = a[i] > 0 ? Math.max(0, a[i] - l1 * generalizationFactor) : Math.min(0, a[i] + l1 * generalizationFactor);
@@ -55,7 +54,7 @@ public class NeuralAlgo {
 
         return a;
     }
-    public static float generalizeLasso(MatrixF32Interface weights) {
+    public static float generalizeLasso(MatrixF32 weights) {
         var result = 0.0f;
 
         for (float item : weights.getData()) {
@@ -65,7 +64,7 @@ public class NeuralAlgo {
         return result / weights.getData().length;
     }
 
-    public static float generalizeRidge(MatrixF32Interface weights) {
+    public static float generalizeRidge(MatrixF32 weights) {
         var result = 0.0f;
 
         for (float item : weights.getData()) {
@@ -76,7 +75,7 @@ public class NeuralAlgo {
     }
 
 
-    public static void normalize(MatrixF32Interface vector) {
+    public static void normalize(MatrixF32 vector) {
         final var data = vector.getData();
         var max = 0.0f;
         var min = 0.0f;
@@ -91,7 +90,7 @@ public class NeuralAlgo {
         }
     }
 
-    public static void softmax(MatrixF32Interface vector, float alpha) {
+    public static void softmax(MatrixF32 vector, float alpha) {
         final var data = vector.getData();
         var sum = 0.0f;
 
@@ -118,7 +117,7 @@ public class NeuralAlgo {
         return Math.max(Math.min(x, max), -max);
     }
 
-    public static float[] softmaxDiff(MatrixF32Interface vector, float alpha) {
+    public static float[] softmaxDiff(MatrixF32 vector, float alpha) {
         final var data = vector.getData().clone();
         var sum = 0.0f;
 
@@ -143,7 +142,7 @@ public class NeuralAlgo {
         return data;
     }
 
-    public static void reLU(MatrixF32Interface vector) {
+    public static void reLU(MatrixF32 vector) {
         final var data = vector.getData();
 
         for (var i = 0; i < data.length; i++) {
@@ -152,11 +151,10 @@ public class NeuralAlgo {
         }
     }
 
-    public static float[] reLUDiff(MatrixF32Interface vector) {
+    public static float[] reLUDiff(MatrixF32 vector) {
         final var data = vector.getData().clone();
 
         for (var i = 0; i < data.length; i++) {
-            //noinspection ManualMinMaxCalculation
             data[i] = data[i] > 0.0f ? 1.0f : 0.0f;
         }
 
@@ -164,14 +162,14 @@ public class NeuralAlgo {
     }
 
     public interface ActivationDiff {
-        float[] eval(MatrixF32Interface result);
+        float[] eval(MatrixF32 result);
     }
 
     public interface LossFunction {
-        float eval(MatrixF32Interface result, float[] target);
+        float eval(MatrixF32 result, float[] target);
     }
 
-    public static void sdg(float alpha, float[] diff, float[] loss, MatrixF32Interface prevLayerResult, MatrixF32Interface weights) {
+    public static void sdg(float alpha, float[] diff, float[] loss, MatrixF32 prevLayerResult, MatrixF32 weights) {
         var delta = new float[loss.length];
 
         for (var i = 0; i < loss.length; i++) {
@@ -181,7 +179,7 @@ public class NeuralAlgo {
         Ops.multiple(new MatrixF32(delta.length, 1, delta), Ops.transposeVector(prevLayerResult), weights, 1.0f, 1.0f).getData();
     }
 
-    public static void deltaCorrection(float alpha, LossFunction lossFunction, MatrixF32Interface result, float[] target, MatrixF32Interface prevLayerResult, MatrixF32Interface weights) {
+    public static void deltaCorrection(float alpha, LossFunction lossFunction, MatrixF32 result, float[] target, MatrixF32 prevLayerResult, MatrixF32 weights) {
         var loss = lossFunction.eval(result, target);
 
         var delta = new float[target.length];

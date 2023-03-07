@@ -1,6 +1,6 @@
 package linear.matrix;
 
-public class MatrixF32 implements MatrixF32Interface {
+public class MatrixF32 {
     final int rows;
     final public int columns;
     float[] data;

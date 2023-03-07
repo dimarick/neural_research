@@ -1,5 +1,4 @@
 import linear.matrix.MatrixF32;
-import linear.matrix.MatrixF32Interface;
 import linear.matrix.Ops;
 import neural.NeuralAlgo;
 
@@ -23,13 +22,11 @@ public class RosenblattPerceptron {
     public static final float ALPHA = 1.0f;
     public static final float GENERALIZATION_FACTOR = 1e-6f;
     public static final float LOSS_THRESHOLD = 0.7f;
-    final private int outputLayerSize;
     final private Random random;
     final private MatrixF32 sensorLayer;
     final private MatrixF32 assocLayer;
 
     public RosenblattPerceptron(int sensorLayerSize, int outputLayerSize, int assocLayerSize, Random random) {
-        this.outputLayerSize = outputLayerSize;
         this.random = new Random(random.nextLong());
 
         this.sensorLayer = new MatrixF32(assocLayerSize, sensorLayerSize);
@@ -54,11 +51,11 @@ public class RosenblattPerceptron {
         return resultMatrix.getData();
     }
 
-    private MatrixF32Interface evalLayer2(MatrixF32Interface hiddenResultMatrix) {
+    private MatrixF32 evalLayer2(MatrixF32 hiddenResultMatrix) {
         return Ops.multiple(assocLayer, hiddenResultMatrix);
     }
 
-    public MatrixF32Interface evalLayer1(float[] sensorData) {
+    public MatrixF32 evalLayer1(float[] sensorData) {
         final var hiddenResultMatrix = Ops.multiple(sensorLayer, new MatrixF32(sensorData.length, 1, sensorData));
         NeuralAlgo.reLU(hiddenResultMatrix);
         NeuralAlgo.normalize(hiddenResultMatrix);
@@ -66,7 +63,7 @@ public class RosenblattPerceptron {
         return hiddenResultMatrix;
     }
 
-    public float[] trainLayer2(MatrixF32Interface hiddenResultMatrix, float[] target, float speed, float dropoutFactor) {
+    public float[] trainLayer2(MatrixF32 hiddenResultMatrix, float[] target, float speed, float dropoutFactor) {
         hiddenResultMatrix = new MatrixF32(hiddenResultMatrix.getData().length, 1, hiddenResultMatrix.getData().clone());
 
         if (dropoutFactor > 0) {

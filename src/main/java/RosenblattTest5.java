@@ -1,5 +1,5 @@
 import com.google.common.primitives.Floats;
-import linear.matrix.MatrixF32Interface;
+import linear.matrix.MatrixF32;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -65,7 +65,7 @@ public class RosenblattTest5 {
             order.add(i);
         }
 
-        var layer1 = new MatrixF32Interface[trainImages.length];
+        var layer1 = new MatrixF32[trainImages.length];
 
         for (var i = 0; i < trainImages.length; i++) {
             layer1[i] = p.evalLayer1(trainImages[i]);

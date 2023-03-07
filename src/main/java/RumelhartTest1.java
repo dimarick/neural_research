@@ -135,8 +135,8 @@ public class RumelhartTest1 {
             } else if (speed0 < 0 && speed1 < 0) {
                 speed = speed * SPEED_SCALE_DOWN;
             } else {
-                if (bias > 1.0) {
-                    dropout = 1 - (1 - dropout) * 0.99f;
+                if (bias > 1.2) {
+                    dropout = 1 - (1 - dropout) * 0.995f;
                 } else {
                     speed *= speedScale;
                 }
@@ -144,7 +144,7 @@ public class RumelhartTest1 {
 
             prevFail = fail;
 
-            if (fail == 0) {
+            if (fail == 0 && (bias < 1.0 || epoch > 20)) {
                 break;
             }
         }
