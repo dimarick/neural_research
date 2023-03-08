@@ -1,5 +1,5 @@
 import com.google.common.primitives.Floats;
-import neural.NeuralAlgo;
+import neural.Activation;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -14,7 +14,7 @@ public class RumelhartTest1 {
     private static final int EPOCHS = 100;
     private static final float SPEED_SCALE_UP = 1.01f;
     private static final float SPEED_SCALE_DOWN = 0.9f;
-    private static final float INITIAL_SPEED = 0.2f;
+    private static final float INITIAL_SPEED = 0.01f;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -37,27 +37,29 @@ public class RumelhartTest1 {
             var result = trainImages.length;
 
             for (var i = 0; i < 30; i++) {
-                var a = 1000 * Math.pow(2, i);
-                var speed = INITIAL_SPEED * (float)Math.pow(1.2, i);
+                for (var j = 0; j < 10; j++) {
+                    var a = 125 * Math.pow(2, i);
+                    var b = a * Math.pow(2, j - 3);
 
-                System.out.println("Starting test with speed " + speed + "(" + a + ")");
-                var p = new RumelhartPerceptron(new SecureRandom(new byte[]{3}))
-                        .addLayer(28 * 28)
-                        .addLayer((int)a, r -> {
-                            NeuralAlgo.reLU(r);
-                        })
-//                        .addLayer(40)
-                        .addLayer(10);
+                    var speed = INITIAL_SPEED * (float)Math.pow(1.2, i);
 
-                result = train(testImages, testLabels, trainImages, trainLabels, speed, 0.0f, p);
+                    System.out.println("Starting test with speed " + speed + "(" + a + ", " + (int)b + ")");
+                    var p = new RumelhartPerceptron(new SecureRandom(new byte[]{3}))
+                            .addLayer(28 * 28)
+                            .addLayer((int)b, new Activation.ReLU())
+                            .addLayer((int)a, new Activation.ReLU())
+                            .addLayer(10);
 
-                var testStart = System.currentTimeMillis();
+                    result = train(testImages, testLabels, trainImages, trainLabels, speed, 0.0f, p);
 
-                var fail = test(testImages, testLabels, p);
+                    var testStart = System.currentTimeMillis();
 
-                var trainRate = ((float)result / trainImages.length) * 100;
-                var testRate = (fail / testImages.length) * 100;
-                System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + trainRate + "% " + ". Test Error rate is: " + testRate + "%");
+                    var fail = test(testImages, testLabels, p);
+
+                    var trainRate = ((float)result / trainImages.length) * 100;
+                    var testRate = (fail / testImages.length) * 100;
+                    System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + trainRate + "% " + ". Test Error rate is: " + testRate + "%");
+                }
             }
 
             System.out.println("Success");

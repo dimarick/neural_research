@@ -1,5 +1,6 @@
 package neural;
 
+import dev.ludovic.netlib.BLAS;
 import linear.MatrixF32;
 import linear.Ops;
 import linear.VectorF32;
@@ -7,6 +8,7 @@ import linear.VectorF32;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.stream.IntStream;
 
 public class NeuralAlgo {
@@ -16,9 +18,7 @@ public class NeuralAlgo {
 
     private static void parallel(BiConsumer<Integer, Integer> task) {
         int cores = Runtime.getRuntime().availableProcessors();
-        IntStream.rangeClosed(0, cores).parallel().forEach(t -> {
-            task.accept(t, cores);
-        });
+        IntStream.rangeClosed(0, cores).parallel().forEach(t -> task.accept(t, cores));
     }
 
     private static int[] readIntsFromRandomPool(Random random, int n, int min, int max) {
@@ -93,13 +93,9 @@ public class NeuralAlgo {
         return a;
     }
     public static float generalizeLasso(MatrixF32 weights) {
-        var result = 0.0f;
+        float[] data = weights.getData();
 
-        for (float item : weights.getData()) {
-            result += Math.abs(item);
-        }
-
-        return result / weights.getData().length;
+        return BLAS.getInstance().sasum(data.length, data, 1) / data.length;
     }
 
     public static float generalizeRidge(MatrixF32 weights) {
@@ -196,10 +192,6 @@ public class NeuralAlgo {
         }
 
         return data;
-    }
-
-    public interface ActivationDiff {
-        float[] eval(MatrixF32 result);
     }
 
     public interface LossFunction {

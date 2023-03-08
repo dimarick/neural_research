@@ -1,6 +1,7 @@
 import linear.MatrixF32;
 import linear.Ops;
 import linear.VectorF32;
+import neural.Activation;
 import neural.NeuralAlgo;
 
 import java.util.ArrayList;
@@ -10,22 +11,7 @@ import java.util.Random;
  * Реализация многослойного перцептрона с обратным распространением ошибки
  */
 public class RumelhartPerceptron {
-    public interface ActivationFunction {
-        void apply(VectorF32 value);
-    }
-
-    private static class Layer {
-        final private int size;
-        final private MatrixF32 weights;
-        final private ActivationFunction activationFunction;
-
-        public Layer(int size, MatrixF32 weights, ActivationFunction activationFunction) {
-            this.size = size;
-            this.weights = weights;
-            this.activationFunction = activationFunction;
-        }
-    }
-
+    private record Layer(int size, MatrixF32 weights, Activation.Interface activationFunction) {}
 
     public static final float ALPHA = 1.0f;
     public static final float GENERALIZATION_FACTOR = 1e-4f;
@@ -38,7 +24,7 @@ public class RumelhartPerceptron {
         this.random = random;
     }
 
-    public RumelhartPerceptron addLayer(int size, ActivationFunction activationFunction) {
+    public RumelhartPerceptron addLayer(int size, Activation.Interface activationFunction) {
         if (inputLayer == null) {
             inputLayer = new Layer(size, null, activationFunction);
 
@@ -61,9 +47,7 @@ public class RumelhartPerceptron {
     }
 
     public RumelhartPerceptron addLayer(int size) {
-        return addLayer(size, r -> {
-            NeuralAlgo.softmax(r, ALPHA);
-        });
+        return addLayer(size, new Activation.Softmax(ALPHA));
     }
 
     private void generateWeights(float[] layer, Random random, int size) {
@@ -80,8 +64,7 @@ public class RumelhartPerceptron {
         }
 
         result = Ops.multiple(outputLayer.weights, result);
-        NeuralAlgo.normalize(result);
-        NeuralAlgo.softmax(result, ALPHA);
+        result = outputLayer.activationFunction.apply(result);
 
         return result.getData();
     }
@@ -101,7 +84,7 @@ public class RumelhartPerceptron {
         }
 
         var result = Ops.multiple(outputLayer.weights, hiddenResult);
-        outputLayer.activationFunction.apply(result);
+        result = outputLayer.activationFunction.apply(result);
 
         final var resultData = result.getData();
         var loss= NeuralAlgo.loss(resultData, target, 0.9f);
@@ -119,10 +102,11 @@ public class RumelhartPerceptron {
         var currentResult = hiddenResult;
 
         for (var i = hiddenLayers.size() - 1; i >= 0; i--) {
+            var layer = hiddenLayers.get(i);
 
             var layerError = new float[currentResult.getData().length];
 
-            var currentResultDiff = NeuralAlgo.reLUDiff(currentResult);
+            var currentResultDiff = layer.activationFunction.diff(currentResult).getData();
 
             for (var j = 0; j < layerError.length; j++) {
                 var sum = 0.0f;
@@ -135,10 +119,10 @@ public class RumelhartPerceptron {
 
             int size = i > 0 ? hiddenLayers.get(i - 1).size : inputLayer.size;
 
-            Ops.multiple(new VectorF32(layerError), hiddenResults[i], hiddenLayers.get(i).weights, -speed * loss / (float)Math.sqrt(size), 1.0f);
+            Ops.multiple(new VectorF32(layerError), hiddenResults[i], layer.weights, -speed * loss / (float)Math.sqrt(size), 1.0f);
 
             nextLayerResult = currentResult.getData();
-            nextLayer = hiddenLayers.get(i).weights.getData();
+            nextLayer = layer.weights.getData();
             nextLayerLoss = layerError;
             currentResult = hiddenResults[i];
         }
@@ -175,8 +159,6 @@ public class RumelhartPerceptron {
     private static VectorF32 evalLayer(VectorF32 result, Layer layer) {
         var r = Ops.multiple(layer.weights, result, 1.0f, 0.0f);
 
-        layer.activationFunction.apply(r);
-
-        return r;
+        return layer.activationFunction.apply(r);
     }
 }
