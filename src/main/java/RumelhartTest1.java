@@ -49,7 +49,7 @@ public class RumelhartTest1 {
 //                        .addLayer(40)
                         .addLayer(10);
 
-                result = train(testImages, testLabels, trainImages, trainLabels, speed, 0.01f, p);
+                result = train(testImages, testLabels, trainImages, trainLabels, speed, 0.0f, p);
 
                 var testStart = System.currentTimeMillis();
 
@@ -91,7 +91,7 @@ public class RumelhartTest1 {
             for (var i : order) {
                 byte label = trainLabels[i];
                 var target = createTargetForLabel(label);
-                var r = p.train(trainImages[i], target, speed, 0* dropout);
+                var r = p.train(trainImages[i], target, speed, dropout);
                 if (getAnswer(r) != label) {
                     fail++;
                 }

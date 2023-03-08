@@ -132,14 +132,9 @@ public class RumelhartPerceptron {
                 layerError[j] = currentResultDiff[j] * sum;
             }
 
-            var w = hiddenLayers.get(i).weights.getData();
-
             int size = i > 0 ? hiddenLayers.get(i - 1).size : inputLayer.size;
-            for (var j = 0; j < layerError.length; j++) {
-                for (var l = 0; l < size; l++) {
-                    w[j * size + l] += -speed * loss * hiddenResults[i].getData()[l] * layerError[j] / Math.sqrt(size);
-                }
-            }
+
+            Ops.multiple(new MatrixF32(layerError.length, 1, layerError), Ops.transposeVector(hiddenResults[i]), hiddenLayers.get(i).weights, -speed * loss / (float)Math.sqrt(size), 1.0f);
 
             nextLayerResult = currentResult.getData();
             nextLayer = hiddenLayers.get(i).weights.getData();

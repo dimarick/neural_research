@@ -5,8 +5,37 @@ import linear.matrix.Ops;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 public class NeuralAlgo {
+
+    final private static int[] randomPool = new int[1048576];
+    private static int randomPoolCursor = randomPool.length;
+
+    private static int[] readIntsFromRandomPool(Random random, int n, int min, int max) {
+        if (randomPoolCursor + n >= randomPool.length) {
+            int cores = Runtime.getRuntime().availableProcessors();
+            IntStream.rangeClosed(0, cores).parallel().forEach(t -> {
+                var r = new Random(random.nextInt());
+                var batch = Math.ceil((double) randomPool.length / cores);
+                var start = (int)(t * batch);
+                var end = (int)Math.min(randomPool.length, start + batch);
+
+                for (var i = start; i < end; i++) {
+                    randomPool[i] = r.nextInt();
+                }
+            });
+
+            randomPoolCursor = 0;
+        }
+
+        randomPoolCursor += n;
+        var scale = (double)((long)Integer.MAX_VALUE - (long)Integer.MIN_VALUE);
+
+        return Arrays.stream(Arrays
+                .copyOfRange(randomPool, randomPoolCursor - n, randomPoolCursor))
+                .map(d -> (int)((d / scale + 0.5) * (max - min) + min)).toArray();
+    }
 
     public static void generalizationApply(float l1, MatrixF32 weights, float generalizationFactor) {
         var a = weights.getData();
@@ -32,7 +61,8 @@ public class NeuralAlgo {
     }
 
     public static void dropout(Random random, float[] result, float k) {
-        for (var i : random.ints((long)(-result.length * Math.log(1 - k)), 0, result.length).toArray()) {
+        int[] ints = readIntsFromRandomPool(random, - (int)(result.length * Math.log(1 - k)), 0, result.length);
+        for (var i : ints) {
             result[i] = 0.0f;
         }
     }
