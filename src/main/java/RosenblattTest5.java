@@ -1,5 +1,5 @@
 import com.google.common.primitives.Floats;
-import linear.MatrixF32;
+import linear.VectorF32;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -37,7 +37,7 @@ public class RosenblattTest5 {
 
             for (var i = 0; i < 30; i++) {
                 var a = 125 * Math.pow(2, i);
-                var speed = INITIAL_SPEED;
+                var speed = INITIAL_SPEED / (float)Math.pow(1.4, i);
 
                 System.out.println("Starting test with speed " + speed + "(" + a + ")");
                 var p = new RosenblattPerceptron(28 * 28, 10, (int) (a), new SecureRandom(new byte[]{3}));
@@ -65,7 +65,7 @@ public class RosenblattTest5 {
             order.add(i);
         }
 
-        var layer1 = new MatrixF32[trainImages.length];
+        var layer1 = new VectorF32[trainImages.length];
 
         for (var i = 0; i < trainImages.length; i++) {
             layer1[i] = p.evalLayer1(trainImages[i]);

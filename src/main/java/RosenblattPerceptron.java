@@ -1,5 +1,6 @@
 import linear.MatrixF32;
 import linear.Ops;
+import linear.VectorF32;
 import neural.NeuralAlgo;
 
 import java.util.*;
@@ -51,20 +52,20 @@ public class RosenblattPerceptron {
         return resultMatrix.getData();
     }
 
-    private MatrixF32 evalLayer2(MatrixF32 hiddenResultMatrix) {
+    private VectorF32 evalLayer2(VectorF32 hiddenResultMatrix) {
         return Ops.multiple(assocLayer, hiddenResultMatrix);
     }
 
-    public MatrixF32 evalLayer1(float[] sensorData) {
-        final var hiddenResultMatrix = Ops.multiple(sensorLayer, new MatrixF32(sensorData.length, 1, sensorData));
+    public VectorF32 evalLayer1(float[] sensorData) {
+        final var hiddenResultMatrix = Ops.multiple(sensorLayer, new VectorF32(sensorData));
         NeuralAlgo.reLU(hiddenResultMatrix);
         NeuralAlgo.normalize(hiddenResultMatrix);
 
         return hiddenResultMatrix;
     }
 
-    public float[] trainLayer2(MatrixF32 hiddenResultMatrix, float[] target, float speed, float dropoutFactor) {
-        hiddenResultMatrix = new MatrixF32(hiddenResultMatrix.getData().length, 1, hiddenResultMatrix.getData().clone());
+    public float[] trainLayer2(VectorF32 hiddenResultMatrix, float[] target, float speed, float dropoutFactor) {
+        hiddenResultMatrix = new VectorF32(hiddenResultMatrix.getData().clone());
 
         if (dropoutFactor > 0) {
             NeuralAlgo.dropout(random, hiddenResultMatrix.getData(), dropoutFactor);

@@ -112,44 +112,6 @@ public class NeuralAlgo {
         return result / weights.getData().length;
     }
 
-    public static void normalize(MatrixF32 vector) {
-        final var data = vector.getData();
-        var max = 0.0f;
-        var min = 0.0f;
-
-        for (var i = 0; i < data.length; i++) {
-            max = Math.max(max, data[i]);
-            min = Math.min(min, data[i]);
-        }
-
-        for (var i = 0; i < data.length; i++) {
-            data[i] = (data[i] - min) / (max - min);
-        }
-    }
-
-    public static void softmax(MatrixF32 vector, float alpha) {
-        final var data = vector.getData();
-        var sum = 0.0f;
-
-        for (var i = 0; i < data.length; i++) {
-            var exp = normalize((float)Math.exp(data[i] * alpha), Float.MAX_VALUE / vector.getData().length);
-            sum += exp;
-            data[i] = exp;
-        }
-
-        sum = normalize(sum, Float.MAX_VALUE);
-
-        if (sum == 0.0f) {
-            Arrays.fill(data, 0.0f);
-
-            return;
-        }
-
-        for (var i = 0; i < data.length; i++) {
-            data[i] /= sum;
-        }
-    }
-
     public static void normalize(VectorF32 vector) {
         final var data = vector.getData();
         var max = 0.0f;
@@ -217,15 +179,6 @@ public class NeuralAlgo {
         return data;
     }
 
-    public static void reLU(MatrixF32 vector) {
-        final var data = vector.getData();
-
-        for (var i = 0; i < data.length; i++) {
-            //noinspection ManualMinMaxCalculation
-            data[i] = data[i] > 0.0f ? data[i] : 0.0f;
-        }
-    }
-
     public static void reLU(VectorF32 vector) {
         final var data = vector.getData();
 
@@ -250,7 +203,7 @@ public class NeuralAlgo {
     }
 
     public interface LossFunction {
-        float eval(MatrixF32 result, float[] target);
+        float eval(VectorF32 result, float[] target);
     }
 
     public static void sdg(float alpha, float[] diff, float[] loss, VectorF32 prevLayerResult, MatrixF32 weights) {
@@ -263,7 +216,7 @@ public class NeuralAlgo {
         Ops.multiple(new VectorF32(delta), prevLayerResult, weights, 1.0f, 1.0f).getData();
     }
 
-    public static void deltaCorrection(float alpha, LossFunction lossFunction, MatrixF32 result, float[] target, MatrixF32 prevLayerResult, MatrixF32 weights) {
+    public static void deltaCorrection(float alpha, LossFunction lossFunction, VectorF32 result, float[] target, VectorF32 prevLayerResult, MatrixF32 weights) {
         var loss = lossFunction.eval(result, target);
 
         var delta = new float[target.length];
@@ -272,6 +225,6 @@ public class NeuralAlgo {
             delta[i] = alpha * loss * (target[i] - result.getData()[i]);
         }
 
-        Ops.multiple(new MatrixF32(target.length, 1, delta), Ops.transposeVector(prevLayerResult), weights, 1.0f, 1.0f).getData();
+        Ops.multiple(new VectorF32(delta), prevLayerResult, weights, 1.0f, 1.0f).getData();
     }
 }
