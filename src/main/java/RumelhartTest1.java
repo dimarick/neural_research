@@ -37,7 +37,7 @@ public class RumelhartTest1 {
             var result = trainImages.length;
 
             for (var i = 0; i < 30; i++) {
-                var a = 10 * Math.pow(2, i);
+                var a = 1000 * Math.pow(2, i);
                 var speed = INITIAL_SPEED * (float)Math.pow(1.2, i);
 
                 System.out.println("Starting test with speed " + speed + "(" + a + ")");

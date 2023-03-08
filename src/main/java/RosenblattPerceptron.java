@@ -1,5 +1,5 @@
-import linear.matrix.MatrixF32;
-import linear.matrix.Ops;
+import linear.MatrixF32;
+import linear.Ops;
 import neural.NeuralAlgo;
 
 import java.util.*;

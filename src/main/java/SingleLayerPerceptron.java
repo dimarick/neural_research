@@ -1,6 +1,6 @@
 
-import linear.matrix.MatrixF32;
-import linear.matrix.Ops;
+import linear.MatrixF32;
+import linear.Ops;
 
 import java.util.Random;
 

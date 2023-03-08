@@ -1,5 +1,6 @@
-import linear.matrix.MatrixF32;
-import linear.matrix.Ops;
+import linear.MatrixF32;
+import linear.Ops;
+import linear.VectorF32;
 import neural.NeuralAlgo;
 
 import java.util.ArrayList;
@@ -10,7 +11,7 @@ import java.util.Random;
  */
 public class RumelhartPerceptron {
     public interface ActivationFunction {
-        void apply(MatrixF32 value);
+        void apply(VectorF32 value);
     }
 
     private static class Layer {
@@ -72,7 +73,7 @@ public class RumelhartPerceptron {
     }
 
     public float[] eval(float[] sensorData) {
-        MatrixF32 result = new MatrixF32(inputLayer.size, 1, sensorData);
+        var result = new VectorF32(sensorData);
 
         for (var layer : hiddenLayers) {
             result = evalLayer(result, layer);
@@ -86,8 +87,8 @@ public class RumelhartPerceptron {
     }
 
     public float[] train(float[] sensorData, float[] target, float speed, float dropoutFactor) {
-        MatrixF32 hiddenResult = new MatrixF32(inputLayer.size, 1, sensorData);
-        MatrixF32[] hiddenResults = new MatrixF32[hiddenLayers.size()];
+        var hiddenResult = new VectorF32(sensorData);
+        var hiddenResults = new VectorF32[hiddenLayers.size()];
         for (int i = 0; i < hiddenLayers.size(); i++) {
             hiddenResults[i] = hiddenResult;
             Layer layer = hiddenLayers.get(i);
@@ -134,7 +135,7 @@ public class RumelhartPerceptron {
 
             int size = i > 0 ? hiddenLayers.get(i - 1).size : inputLayer.size;
 
-            Ops.multiple(new MatrixF32(layerError.length, 1, layerError), Ops.transposeVector(hiddenResults[i]), hiddenLayers.get(i).weights, -speed * loss / (float)Math.sqrt(size), 1.0f);
+            Ops.multiple(new VectorF32(layerError), hiddenResults[i], hiddenLayers.get(i).weights, -speed * loss / (float)Math.sqrt(size), 1.0f);
 
             nextLayerResult = currentResult.getData();
             nextLayer = hiddenLayers.get(i).weights.getData();
@@ -171,7 +172,7 @@ public class RumelhartPerceptron {
         return resultData;
     }
 
-    private static MatrixF32 evalLayer(MatrixF32 result, Layer layer) {
+    private static VectorF32 evalLayer(VectorF32 result, Layer layer) {
         var r = Ops.multiple(layer.weights, result, 1.0f, 0.0f);
 
         layer.activationFunction.apply(r);

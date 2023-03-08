@@ -1,10 +1,12 @@
 package neural;
 
-import linear.matrix.MatrixF32;
-import linear.matrix.Ops;
+import linear.MatrixF32;
+import linear.Ops;
+import linear.VectorF32;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
 public class NeuralAlgo {
@@ -12,10 +14,16 @@ public class NeuralAlgo {
     final private static int[] randomPool = new int[1048576];
     private static int randomPoolCursor = randomPool.length;
 
+    private static void parallel(BiConsumer<Integer, Integer> task) {
+        int cores = Runtime.getRuntime().availableProcessors();
+        IntStream.rangeClosed(0, cores).parallel().forEach(t -> {
+            task.accept(t, cores);
+        });
+    }
+
     private static int[] readIntsFromRandomPool(Random random, int n, int min, int max) {
         if (randomPoolCursor + n >= randomPool.length) {
-            int cores = Runtime.getRuntime().availableProcessors();
-            IntStream.rangeClosed(0, cores).parallel().forEach(t -> {
+            parallel((t, cores) -> {
                 var r = new Random(random.nextInt());
                 var batch = Math.ceil((double) randomPool.length / cores);
                 var start = (int)(t * batch);
@@ -104,7 +112,6 @@ public class NeuralAlgo {
         return result / weights.getData().length;
     }
 
-
     public static void normalize(MatrixF32 vector) {
         final var data = vector.getData();
         var max = 0.0f;
@@ -143,11 +150,49 @@ public class NeuralAlgo {
         }
     }
 
+    public static void normalize(VectorF32 vector) {
+        final var data = vector.getData();
+        var max = 0.0f;
+        var min = 0.0f;
+
+        for (var i = 0; i < data.length; i++) {
+            max = Math.max(max, data[i]);
+            min = Math.min(min, data[i]);
+        }
+
+        for (var i = 0; i < data.length; i++) {
+            data[i] = (data[i] - min) / (max - min);
+        }
+    }
+
+    public static void softmax(VectorF32 vector, float alpha) {
+        final var data = vector.getData();
+        var sum = 0.0f;
+
+        for (var i = 0; i < data.length; i++) {
+            var exp = normalize((float)Math.exp(data[i] * alpha), Float.MAX_VALUE / vector.getData().length);
+            sum += exp;
+            data[i] = exp;
+        }
+
+        sum = normalize(sum, Float.MAX_VALUE);
+
+        if (sum == 0.0f) {
+            Arrays.fill(data, 0.0f);
+
+            return;
+        }
+
+        for (var i = 0; i < data.length; i++) {
+            data[i] /= sum;
+        }
+    }
+
     private static float normalize(float x, float max) {
         return Math.max(Math.min(x, max), -max);
     }
 
-    public static float[] softmaxDiff(MatrixF32 vector, float alpha) {
+    public static float[] softmaxDiff(VectorF32 vector, float alpha) {
         final var data = vector.getData().clone();
         var sum = 0.0f;
 
@@ -181,7 +226,16 @@ public class NeuralAlgo {
         }
     }
 
-    public static float[] reLUDiff(MatrixF32 vector) {
+    public static void reLU(VectorF32 vector) {
+        final var data = vector.getData();
+
+        for (var i = 0; i < data.length; i++) {
+            //noinspection ManualMinMaxCalculation
+            data[i] = data[i] > 0.0f ? data[i] : 0.0f;
+        }
+    }
+
+    public static float[] reLUDiff(VectorF32 vector) {
         final var data = vector.getData().clone();
 
         for (var i = 0; i < data.length; i++) {
@@ -199,14 +253,14 @@ public class NeuralAlgo {
         float eval(MatrixF32 result, float[] target);
     }
 
-    public static void sdg(float alpha, float[] diff, float[] loss, MatrixF32 prevLayerResult, MatrixF32 weights) {
+    public static void sdg(float alpha, float[] diff, float[] loss, VectorF32 prevLayerResult, MatrixF32 weights) {
         var delta = new float[loss.length];
 
         for (var i = 0; i < loss.length; i++) {
             delta[i] = -alpha * loss[i] * diff[i];
         }
 
-        Ops.multiple(new MatrixF32(delta.length, 1, delta), Ops.transposeVector(prevLayerResult), weights, 1.0f, 1.0f).getData();
+        Ops.multiple(new VectorF32(delta), prevLayerResult, weights, 1.0f, 1.0f).getData();
     }
 
     public static void deltaCorrection(float alpha, LossFunction lossFunction, MatrixF32 result, float[] target, MatrixF32 prevLayerResult, MatrixF32 weights) {

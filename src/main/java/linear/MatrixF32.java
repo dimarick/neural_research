@@ -1,4 +1,4 @@
-package linear.matrix;
+package linear;
 
 public class MatrixF32 {
     final int rows;

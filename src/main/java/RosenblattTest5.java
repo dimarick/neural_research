@@ -1,5 +1,5 @@
 import com.google.common.primitives.Floats;
-import linear.matrix.MatrixF32;
+import linear.MatrixF32;
 
 import java.io.DataInputStream;
 import java.io.EOFException;

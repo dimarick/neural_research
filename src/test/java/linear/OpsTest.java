@@ -1,4 +1,4 @@
-package linear.matrix;
+package linear;
 
 import nu.pattern.OpenCV;
 import org.jblas.FloatMatrix;
@@ -139,7 +139,7 @@ public class OpsTest {
 
         float[] result = new float[0];
 
-        for (var i = 0; i < 20; i++) {
+        for (var i = 0; i < 200; i++) {
             result = Ops.multiple(
                     new MatrixF32(40000, 10000, data1),
                     new MatrixF32(10000, 1, data2)
