@@ -8,7 +8,6 @@ import linear.VectorF32;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.stream.IntStream;
 
 public class NeuralAlgo {
@@ -113,9 +112,9 @@ public class NeuralAlgo {
         var max = 0.0f;
         var min = 0.0f;
 
-        for (var i = 0; i < data.length; i++) {
-            max = Math.max(max, data[i]);
-            min = Math.min(min, data[i]);
+        for (float datum : data) {
+            max = Math.max(max, datum);
+            min = Math.min(min, datum);
         }
 
         for (var i = 0; i < data.length; i++) {
@@ -123,76 +122,6 @@ public class NeuralAlgo {
         }
     }
 
-    public static void softmax(VectorF32 vector, float alpha) {
-        final var data = vector.getData();
-        var sum = 0.0f;
-
-        for (var i = 0; i < data.length; i++) {
-            var exp = normalize((float)Math.exp(data[i] * alpha), Float.MAX_VALUE / vector.getData().length);
-            sum += exp;
-            data[i] = exp;
-        }
-
-        sum = normalize(sum, Float.MAX_VALUE);
-
-        if (sum == 0.0f) {
-            Arrays.fill(data, 0.0f);
-
-            return;
-        }
-
-        for (var i = 0; i < data.length; i++) {
-            data[i] /= sum;
-        }
-    }
-
-    private static float normalize(float x, float max) {
-        return Math.max(Math.min(x, max), -max);
-    }
-
-    public static float[] softmaxDiff(VectorF32 vector, float alpha) {
-        final var data = vector.getData().clone();
-        var sum = 0.0f;
-
-        for (var i = 0; i < data.length; i++) {
-            var exp = (float)Math.max(Math.min(Math.exp(data[i] * alpha), Float.MAX_VALUE / vector.getData().length / 2), -Float.MAX_VALUE / vector.getData().length / 2);
-            sum += exp;
-            data[i] = exp;
-        }
-
-        sum = Math.max(Math.min(sum, Float.MAX_VALUE), -Float.MAX_VALUE);
-
-        if (sum == 0.0f) {
-            Arrays.fill(data, 0.0f);
-
-            return data;
-        }
-
-        for (var i = 0; i < data.length; i++) {
-            data[i] = (data[i] / sum) * (1 - data[i] / sum);
-        }
-
-        return data;
-    }
-
-    public static void reLU(VectorF32 vector) {
-        final var data = vector.getData();
-
-        for (var i = 0; i < data.length; i++) {
-            //noinspection ManualMinMaxCalculation
-            data[i] = data[i] > 0.0f ? data[i] : 0.0f;
-        }
-    }
-
-    public static float[] reLUDiff(VectorF32 vector) {
-        final var data = vector.getData().clone();
-
-        for (var i = 0; i < data.length; i++) {
-            data[i] = data[i] > 0.0f ? 1.0f : 0.0f;
-        }
-
-        return data;
-    }
 
     public interface LossFunction {
         float eval(VectorF32 result, float[] target);

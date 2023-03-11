@@ -1,6 +1,7 @@
 import linear.MatrixF32;
 import linear.Ops;
 import linear.VectorF32;
+import neural.Activation;
 import neural.NeuralAlgo;
 
 import java.util.*;
@@ -47,7 +48,7 @@ public class RosenblattPerceptron {
         final var hiddenResultMatrix = evalLayer1(sensorData);
         final var resultMatrix = evalLayer2(hiddenResultMatrix);
         NeuralAlgo.normalize(resultMatrix);
-        NeuralAlgo.softmax(resultMatrix, ALPHA);
+        new Activation.Softmax(ALPHA).apply(resultMatrix);
 
         return resultMatrix.getData();
     }
@@ -58,7 +59,7 @@ public class RosenblattPerceptron {
 
     public VectorF32 evalLayer1(float[] sensorData) {
         final var hiddenResultMatrix = Ops.multiple(sensorLayer, new VectorF32(sensorData));
-        NeuralAlgo.reLU(hiddenResultMatrix);
+        new Activation.ReLU().apply(hiddenResultMatrix);
         NeuralAlgo.normalize(hiddenResultMatrix);
 
         return hiddenResultMatrix;
@@ -75,7 +76,7 @@ public class RosenblattPerceptron {
 
         final var result = resultMatrix.getData();
 
-        NeuralAlgo.softmax(resultMatrix, ALPHA);
+        new Activation.Softmax(ALPHA).apply(resultMatrix);
 
         NeuralAlgo.deltaCorrection(
                 speed * NeuralAlgo.dropoutRate(dropoutFactor),

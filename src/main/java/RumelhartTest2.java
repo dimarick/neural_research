@@ -1,20 +1,24 @@
 import com.google.common.primitives.Floats;
 import neural.Activation;
+import neural.Dropout;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
-public class RumelhartTest1 {
+public class RumelhartTest2 {
 
-    private static final int EPOCHS = 50;
-    private static final float SPEED_SCALE_UP = 1.02f;
-    private static final float SPEED_SCALE_DOWN = 0.91f;
-    private static final float INITIAL_SPEED = 1.0f;
+    private static final int EPOCHS = 500;
+    private static final float SPEED_SCALE_UP = 1.0f;
+    private static final float SPEED_SCALE_DOWN = 1.0f;
+    private static final float INITIAL_SPEED = 0.12f;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -37,21 +41,21 @@ public class RumelhartTest1 {
             var result = trainImages.length;
 
             for (var i = 0; i < 8; i++) {
-                for (var j = 0; j < 7; j++) {
+                for (var j = 0; j < 1; j++) {
                     var a = 20 * Math.pow(2, i);
-                    var b = 20 * Math.pow(2, j);
+                    var b = 50 * Math.pow(2, j);
 
                     var speed = INITIAL_SPEED;
 
                     System.out.println("Starting test with speed " + speed + "(" + a + ", " + (int)b + ")");
-                    var p = new RumelhartPerceptron(new SecureRandom(new byte[]{3}))
+                    SecureRandom random = new SecureRandom(new byte[]{3});
+                    var p = new RumelhartPerceptron(random)
                             .addLayer(28 * 28)
-                            .parent()
-                            .addLayer((int)a, new Activation.ReLU())
-                            .parent()
-//                            .addLayer((int)b, new Activation.Linear())
-                            .addLayer(10)
-                            .parent();
+                            .set(new Activation.ReLU())
+                            .set(new Dropout.Rng(new Random(random.nextLong()), 0.3f)).parent()
+                            .addLayer((int)a)
+                            .set(new Activation.ReLU()).parent()
+                            .addLayer(10).parent();
 
                     result = train(testImages, testLabels, trainImages, trainLabels, speed, 0.0f, p);
 
@@ -134,10 +138,6 @@ public class RumelhartTest1 {
             var speed0 = effectiveSpeedQueue.subList(2, effectiveSpeedQueue.size() - 3).stream().mapToDouble(i -> (double)i).average().orElse(0.0);
             var speed1 = effectiveSpeedQueue.subList(1, effectiveSpeedQueue.size() - 3).stream().mapToDouble(i -> (double)i).average().orElse(0.0);
             var speed2 = effectiveSpeedQueue.subList(0, effectiveSpeedQueue.size() - 3).stream().mapToDouble(i -> (double)i).average().orElse(0.0);
-
-            if (failRate > 0.3f) {
-                speed = speed * SPEED_SCALE_DOWN * SPEED_SCALE_DOWN;
-            }
 
             if (speed1 > speed0 && speed2 > speed1) {
                 speed = speed * SPEED_SCALE_DOWN;
