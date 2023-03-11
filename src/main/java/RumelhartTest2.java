@@ -101,7 +101,7 @@ public class RumelhartTest2 {
             for (var i : order.subList(0, trainSize)) {
                 byte label = trainLabels[i];
                 var target = createTargetForLabel(label);
-                var r = p.train(trainImages[i], target, speed, dropout);
+                var r = p.train(trainImages[i], target, speed);
                 if (getAnswer(r) != label) {
                     fail++;
                 }

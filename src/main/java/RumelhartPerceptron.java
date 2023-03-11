@@ -118,7 +118,7 @@ public class RumelhartPerceptron {
         return result.getData();
     }
 
-    public float[] train(float[] sensorData, float[] target, float speed, float dropoutFactor) {
+    public float[] train(float[] sensorData, float[] target, float speed) {
         var hiddenResult = new VectorF32(sensorData);
         var hiddenResults = new VectorF32[hiddenLayers.size()];
         for (int i = 0; i < hiddenLayers.size(); i++) {
@@ -130,13 +130,7 @@ public class RumelhartPerceptron {
             hiddenResult = evalLayer(hiddenResult, layer);
         }
 
-        float[] hiddenData = hiddenResult.getData();
-
         outputLayer.dropout.apply(hiddenResult);
-
-        if (dropoutFactor > 0) {
-            NeuralAlgo.dropout(random, hiddenData, dropoutFactor);
-        }
 
         var result = Ops.multiple(outputLayer.weights, hiddenResult);
         result = outputLayer.activation.apply(result);
@@ -187,7 +181,7 @@ public class RumelhartPerceptron {
         }
 
         NeuralAlgo.sdg(
-                speed * loss * NeuralAlgo.dropoutRate(dropoutFactor),
+                speed * loss * outputLayer.dropout.getRate(hiddenResult),
                 diff.getData(),
                 error,
                 hiddenResult,
