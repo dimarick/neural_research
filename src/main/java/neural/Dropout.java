@@ -23,10 +23,10 @@ public class Dropout {
         }
 
         public void apply(VectorF32 result) {
-            int[] ints = getInts(result);
+            var indexes = getInts(result);
             float[] resultData = result.getData();
 
-            for (var i :ints) {
+            for (var i :indexes) {
                 resultData[i] = 0.0f;
             }
         }
@@ -50,11 +50,21 @@ public class Dropout {
         }
 
         public void apply(VectorF32 result) {
-            int[] ints = getInts(result);
+            var indexes = getInts(result);
+            var values = readIntsFromRandomPool(random, indexes.length);
             float[] resultData = result.getData();
 
-            for (var i :ints) {
-                resultData[i] = random.nextFloat(0.0f, 1.0f);
+            var scale = 1.0f / ((long)Integer.MAX_VALUE - (long)Integer.MIN_VALUE);
+
+            for (var i = 0; i < indexes.length; i++) {
+                var index = indexes[i];
+                if (index > resultData.length) {
+                    continue;
+                }
+                if (index > values.length) {
+                    continue;
+                }
+                resultData[index] = values[i] * scale + 0.5f;
             }
         }
     }
@@ -68,6 +78,22 @@ public class Dropout {
     }
 
     private static int[] readIntsFromRandomPool(Random random, int n, int min, int max) {
+        enshurePoolFullfilled(random, n);
+
+        var scale = (double)((long)Integer.MAX_VALUE - (long)Integer.MIN_VALUE);
+
+        return Arrays.stream(Arrays
+                        .copyOfRange(randomPool, randomPoolCursor - n, randomPoolCursor))
+                .map(d -> (int)((d / scale + 0.5) * (max - min) + min)).toArray();
+    }
+
+    private static int[] readIntsFromRandomPool(Random random, int n) {
+        enshurePoolFullfilled(random, n);
+
+        return Arrays.copyOfRange(randomPool, randomPoolCursor - n, randomPoolCursor);
+    }
+
+    private static void enshurePoolFullfilled(Random random, int n) {
         if (randomPoolCursor + n >= randomPool.length) {
             parallel((t, cores) -> {
                 var r = new Random(random.nextInt());
@@ -84,10 +110,5 @@ public class Dropout {
         }
 
         randomPoolCursor += n;
-        var scale = (double)((long)Integer.MAX_VALUE - (long)Integer.MIN_VALUE);
-
-        return Arrays.stream(Arrays
-                        .copyOfRange(randomPool, randomPoolCursor - n, randomPoolCursor))
-                .map(d -> (int)((d / scale + 0.5) * (max - min) + min)).toArray();
     }
 }

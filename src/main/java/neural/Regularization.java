@@ -3,7 +3,7 @@ package neural;
 import dev.ludovic.netlib.BLAS;
 import linear.MatrixF32;
 
-public class Generalization {
+public class Regularization {
     public interface Interface {
         void apply(MatrixF32 weights);
     }

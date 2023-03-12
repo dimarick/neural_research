@@ -1,5 +1,7 @@
 import com.google.common.primitives.Floats;
 import neural.Activation;
+import neural.Optimizer;
+import neural.RumelhartPerceptron;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -44,7 +46,7 @@ public class RumelhartTest1 {
                     var speed = INITIAL_SPEED;
 
                     System.out.println("Starting test with speed " + speed + "(" + a + ", " + (int)b + ")");
-                    var p = new RumelhartPerceptron(new SecureRandom(new byte[]{3}))
+                    var p = new RumelhartPerceptron(new SecureRandom(new byte[]{3}), new Optimizer.StochasticGradientDescent())
                             .addLayer(28 * 28)
                             .parent()
                             .addLayer((int)a, new Activation.ReLU())
