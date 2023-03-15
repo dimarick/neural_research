@@ -40,7 +40,7 @@ public class Optimizer {
                 return 0;
             }
 
-            for (var i = layers.length - 2; i > 1; i--) {
+            for (var i = layers.length - 2; i > 0; i--) {
                 var layer = layers[i];
                 var currentResult = layerResults[i];
                 var mem = memory[i];

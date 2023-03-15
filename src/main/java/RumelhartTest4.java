@@ -13,7 +13,7 @@ import java.util.zip.GZIPInputStream;
 public class RumelhartTest4 {
 
     private static final int EPOCHS = 50;
-    private static final float INITIAL_SPEED = 0.2f;
+    private static final float INITIAL_SPEED = 0.5f;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -38,12 +38,12 @@ public class RumelhartTest4 {
             for (var i = 0; i <= 6; i++) {
                 var speed = INITIAL_SPEED;
                 for (var j = 0; j <= 20; j++) {
-                    var a = 320 * Math.pow(2, i);
+                    var a = 160 * Math.pow(2, i);
                     var b = 50 * Math.pow(2, j);
                     var dropoutInput = 0.18f;
                     SecureRandom random = new SecureRandom(new byte[]{3});
                     var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
-                    var dropoutA = 0.0f * j;
+                    var dropoutA = 0.02f * j;
 
                     var rAlgo = new Regularization.ElasticNet(1e-6f);
 
@@ -56,7 +56,7 @@ public class RumelhartTest4 {
                             .parent()
 
                             .addLayer((int)a)
-                            .set(new Activation.Linear())
+                            .set(new Activation.ReLU())
                             .set(new Dropout.Zero(new Random(random.nextLong()), dropoutA))
                             .set(rAlgo).parent()
 
