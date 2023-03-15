@@ -10,10 +10,10 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
-public class RumelhartTest2 {
+public class RumelhartTest4 {
 
     private static final int EPOCHS = 50;
-    private static final float INITIAL_SPEED = 0.5f;
+    private static final float INITIAL_SPEED = 0.2f;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -37,28 +37,27 @@ public class RumelhartTest2 {
 
             for (var i = 0; i <= 6; i++) {
                 var speed = INITIAL_SPEED;
-                for (var j = 0; j <= 64; j++) {
-                    var a = 160 * Math.pow(2, i);
-
-                    var rFactor = 1e-9f * (float)Math.pow(Math.pow(1e7, 1.0 / 10), Math.floor((double)j / 3));
-                    var rAlgo = switch (j % 3) {
-                        case 0 -> new Regularization.Lasso(rFactor);
-                        case 1 -> new Regularization.Ridge(rFactor);
-                        default -> new Regularization.ElasticNet(rFactor);
-                    };
-
-                    System.out.println("Starting test with speed " + speed + "(" + a + ", " + 1e-6f + "), " + rAlgo.getClass().getSimpleName());
+                for (var j = 0; j <= 20; j++) {
+                    var a = 320 * Math.pow(2, i);
+                    var b = 50 * Math.pow(2, j);
+                    var dropoutInput = 0.18f;
                     SecureRandom random = new SecureRandom(new byte[]{3});
+                    var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
+                    var dropoutA = 0.0f * j;
+
+                    var rAlgo = new Regularization.ElasticNet(1e-6f);
+
+                    System.out.println("Starting test with speed " + speed + "(" + a + ", " + 1e-6f + "), " + rAlgo.getClass().getSimpleName() + ", dropout I: " + dropoutInputAlgo.getClass().getSimpleName() + ", A:" + dropoutA);
 
                     var p = new RumelhartPerceptron(random, new Optimizer.StochasticGradientDescent())
                             .addLayer(28 * 28)
                             .set(new Activation.ReLU())
-                            .set(new Dropout.Rng(new Random(random.nextLong()), 0))
+                            .set(dropoutInputAlgo)
                             .parent()
 
                             .addLayer((int)a)
-                            .set(new Activation.ReLU())
-                            .set(new Dropout.Zero(new Random(random.nextLong()), 0))
+                            .set(new Activation.Linear())
+                            .set(new Dropout.Zero(new Random(random.nextLong()), dropoutA))
                             .set(rAlgo).parent()
 
                             .addLayer(10)

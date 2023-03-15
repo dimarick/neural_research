@@ -1,5 +1,6 @@
 package neural;
 
+import linear.MatrixF32;
 import linear.Ops;
 import linear.VectorF32;
 
@@ -9,12 +10,29 @@ public class Optimizer {
     }
 
     public static class StochasticGradientDescent implements Interface {
-        public float apply(Layer[] layers, VectorF32[] layerResults, VectorF32 target, float eta) {
-            var result = layerResults[layerResults.length - 1];
-            var outputLayer = layers[layers.length - 1];
+        private LayerStaticMemory[] memory;
+        private record LayerStaticMemory(VectorF32 diff, VectorF32 error, MatrixF32 errorMatrix, VectorF32 target, VectorF32 gradient) {}
 
-            var diff = outputLayer.activation.diff(result);
-            var error = Ops.subtract(result.getData(), target.getData());
+        public float apply(Layer[] layers, VectorF32[] layerResults, VectorF32 target, float eta) {
+            if (memory == null) {
+                memory = new LayerStaticMemory[layers.length];
+                for (var i = 0; i < layers.length; i++) {
+                    int size = layers[i].size;
+                    var err = new float[size];
+                    memory[i] = new LayerStaticMemory(new VectorF32(new float[size]), new VectorF32(err), new MatrixF32(1, err.length, err), new VectorF32(new float[size]), new VectorF32(new float[size]));
+                }
+            }
+
+            int outLayerId = layerResults.length - 1;
+            var result = layerResults[outLayerId];
+            var outputLayer = layers[outLayerId];
+
+            var outMemory = memory[outLayerId];
+
+            var diff = outputLayer.activation.diff(result, outMemory.diff);
+            System.arraycopy(result.getData(), 0, outMemory.error.getData(), 0, target.getData().length);
+
+            var error = Ops.add(target.getData(), outMemory.error.getData(), -1.0f);
 
             var loss = outputLayer.loss.apply(target, result);
 
@@ -22,47 +40,39 @@ public class Optimizer {
                 return 0;
             }
 
-            var nextLayerResult = result.getData();
-            var nextLayer = outputLayer.weights.getData();
-            var nextLayerLoss = error;
-            var currentResult = layerResults[layers.length - 2];
-
-            for (var i = layers.length - 2; i > 0; i--) {
+            for (var i = layers.length - 2; i > 1; i--) {
                 var layer = layers[i];
+                var currentResult = layerResults[i];
+                var mem = memory[i];
 
                 float[] currentResultData = currentResult.getData();
-                var layerTarget = currentResultData.clone();
-                var layerError = currentResultData.clone();
+                System.arraycopy(currentResultData, 0, mem.target.getData(), 0, currentResultData.length);
 
-                var currentResultDiff = layer.activation.diff(currentResult).getData();
+                var layerTarget = mem.target.getData();
 
-                for (var j = 0; j < layerTarget.length; j++) {
-                    var sum = 0.0f;
-                    for (var k = 0; k < nextLayerResult.length; k++) {
-                        sum += nextLayerLoss[k] * nextLayer[k * currentResultData.length + j];
-                    }
+                var currentResultDiff = layer.activation.diff(currentResult, mem.diff).getData();
 
-                    layerTarget[j] += currentResultDiff[j] * sum;
-                    layerError[j] = currentResultDiff[j] * sum;
+                var layerError = Ops.multiple(memory[i + 1].errorMatrix, layers[i + 1].weights, mem.errorMatrix, 1.0f, 0.0f).getData();
+
+                var gradient = mem.gradient.getData();
+
+                for (var j = 0; j < layerError.length; j++) {
+                    gradient[j] = layerError[j] * currentResultDiff[j];
+                    layerTarget[j] += gradient[j];
                 }
 
-                var loss2 = layer.loss.apply(new VectorF32(layerTarget), currentResult);
+                var loss2 = layer.loss.apply(mem.target, currentResult);
 
-                Ops.multiple(new VectorF32(layerError), layerResults[i - 1], layer.weights, -eta * loss2 * layer.dropout.getRate(layerResults[i - 1]), 1.0f);
-
-                nextLayerResult = currentResultData;
-                nextLayer = layer.weights.getData();
-                nextLayerLoss = layerError;
-                currentResult = layerResults[i];
+                Ops.multiple(mem.gradient, layerResults[i - 1], layer.weights, -eta * loss2 * layer.dropout.getRate(layerResults[i - 1]), 1.0f);
             }
 
-            var delta = new float[error.length];
+            var gradient = outMemory.gradient.getData();
 
             for (var i = 0; i < error.length; i++) {
-                delta[i] = -eta * loss * error[i] * diff.getData()[i];
+                gradient[i] = -eta * loss * error[i] * diff.getData()[i];
             }
 
-            Ops.multiple(new VectorF32(delta), layerResults[layerResults.length - 2], outputLayer.weights, 1.0f, 1.0f).getData();
+            Ops.multiple(outMemory.gradient, layerResults[outLayerId - 1], outputLayer.weights, 1.0f, 1.0f).getData();
 
             return loss;
         }

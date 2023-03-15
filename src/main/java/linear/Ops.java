@@ -114,15 +114,10 @@ public class Ops {
 
         return new MatrixF32(matrix.getColumns(), matrix.getRows(), matrix.getData());
     }
+    public static float[] add(float[] x, float[] y, float alpha) {
+        getBlas().saxpy(x.length, alpha, x, 1, y, 1);
 
-    public static float[] subtract(float[] a, float[] b) {
-        var r = new float[a.length];
-
-        for (var i = 0; i < a.length; i++) {
-            r[i] = a[i] - b[i];
-        }
-
-        return r;
+        return y;
     }
 
     private static void multipleF32Blas(float[] resultData, MatrixF32 matrix1, MatrixF32 matrix2, float[] data1, float[] data2, float alpha, float beta) {

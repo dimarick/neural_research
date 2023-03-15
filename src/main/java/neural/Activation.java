@@ -8,7 +8,7 @@ public class Activation {
 
     public interface Interface {
         VectorF32 apply(VectorF32 vector);
-        VectorF32 diff(VectorF32 vector);
+        VectorF32 diff(VectorF32 vector, VectorF32 output);
         Loss.Interface suggestLoss();
     }
 
@@ -25,15 +25,17 @@ public class Activation {
 
             return vector;
         }
+
         @Override
-        public VectorF32 diff(VectorF32 vector) {
-            final var data = vector.getData().clone();
+        public VectorF32 diff(VectorF32 vector, VectorF32 output) {
+            final var data = output.getData();
+            final var input = vector.getData();
 
             for (var i = 0; i < data.length; i++) {
-                data[i] = data[i] > 0.0f ? 1.0f : 0.0f;
+                data[i] = input[i] > 0.0f ? 1.0f : 0.0f;
             }
 
-            return new VectorF32(data);
+            return output;
         }
 
         @Override
@@ -81,12 +83,13 @@ public class Activation {
         }
 
         @Override
-        public VectorF32 diff(VectorF32 vector) {
-            final var data = vector.getData().clone();
+        public VectorF32 diff(VectorF32 vector, VectorF32 output) {
+            final var data = output.getData();
+            final var input = vector.getData();
             var sum = 0.0f;
 
             for (var i = 0; i < data.length; i++) {
-                var exp = (float)Math.max(Math.min(Math.exp(data[i] * alpha), Float.MAX_VALUE / vector.getData().length / 2), -Float.MAX_VALUE / vector.getData().length / 2);
+                var exp = (float)Math.max(Math.min(Math.exp(data[i] * alpha), Float.MAX_VALUE / input.length / 2), -Float.MAX_VALUE / input.length / 2);
                 sum += exp;
                 data[i] = exp;
             }
@@ -100,11 +103,12 @@ public class Activation {
             }
 
             for (var i = 0; i < data.length; i++) {
-                data[i] = (data[i] / sum) * (1 - data[i] / sum);
+                data[i] = (input[i] / sum) * (1 - input[i] / sum);
             }
 
-            return new VectorF32(data);
+            return output;
         }
+
         @Override
         public Loss.Interface suggestLoss() {
             return new Loss.CrossEntropyLoss();
@@ -124,12 +128,10 @@ public class Activation {
         }
 
         @Override
-        public VectorF32 diff(VectorF32 vector) {
-            var diff = vector.getData().clone();
+        public VectorF32 diff(VectorF32 vector, VectorF32 output) {
+            Arrays.fill(output.getData(), 1f);
 
-            Arrays.fill(diff, 1f);
-
-            return new VectorF32(diff);
+            return output;
         }
 
         @Override

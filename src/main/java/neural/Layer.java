@@ -2,6 +2,8 @@ package neural;
 
 import linear.MatrixF32;
 
+import java.util.Random;
+
 public final class Layer {
     public final RumelhartPerceptron parent;
     public final int size;
@@ -17,7 +19,8 @@ public final class Layer {
         this.weights = weights;
         this
                 .set(new Activation.Softmax())
-                .set(new Regularization.Lasso());
+                .set(new Regularization.Lasso())
+                .set(new Dropout.Zero(new Random(), 0));
     }
 
     public RumelhartPerceptron parent() {

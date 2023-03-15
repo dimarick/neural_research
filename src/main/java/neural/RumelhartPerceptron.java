@@ -55,7 +55,7 @@ public class RumelhartPerceptron {
 
     private void generateWeights(float[] layer, Random random, int size) {
         for (var i = 0; i < layer.length; i++) {
-            layer[i] = (float)random.nextGaussian(0.0f, 1f / size);
+            layer[i] = (float)random.nextGaussian(0.0f, 1f / Math.sqrt(size));
         }
     }
 
@@ -73,7 +73,10 @@ public class RumelhartPerceptron {
     }
 
     public float[] train(float[] sensorData, float[] target, float speed) {
-        var layerInput = new VectorF32(sensorData);
+        var layerInput = new VectorF32(sensorData.clone());
+
+        inputLayer.dropout.apply(layerInput);
+
         var layerResult = new VectorF32[hiddenLayers.size() + 2];
         var layers = new Layer[hiddenLayers.size() + 2];
 
@@ -97,7 +100,7 @@ public class RumelhartPerceptron {
 
         optimizer.apply(layers, layerResult, new VectorF32(target), speed);
 
-        if (new Random().nextFloat(0.0f, 1.0f) > 0.9f) {
+        if (new Random().nextFloat(0.0f, 1.0f) > 0.99f) {
             for (var i = hiddenLayers.size() - 1; i > 0; i--) {
                 hiddenLayers.get(i).regularization.apply(hiddenLayers.get(i).weights);
             }
