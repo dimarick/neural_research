@@ -3,6 +3,23 @@ package linear;
 import dev.ludovic.netlib.BLAS;
 
 public class Ops {
+    public static VectorF32 multipleBand(VectorF32 vector1, VectorF32 vector2, VectorF32 result, float alpha, float beta) {
+        getBlas().ssbmv("L",
+                vector1.getSize(),
+                0,
+                alpha,
+                vector1.getData(),
+                1,
+                vector2.getData(),
+                1,
+                beta,
+                result.getData(),
+                1
+        );
+
+        return result;
+    }
+
     public static VectorF32 multiple(VectorF32 vector, MatrixF32 matrix, VectorF32 result, float alpha, float beta) {
         getBlas().sgemv("N",
                 matrix.getRows(),
@@ -107,13 +124,6 @@ public class Ops {
         return result;
     }
 
-    public static MatrixF32 transposeVector(MatrixF32 matrix) {
-        if (matrix.getRows() > 1 && matrix.getColumns() > 1) {
-            throw new RuntimeException("cannot transpose matrix");
-        }
-
-        return new MatrixF32(matrix.getColumns(), matrix.getRows(), matrix.getData());
-    }
     public static float[] add(float[] x, float[] y, float alpha) {
         getBlas().saxpy(x.length, alpha, x, 1, y, 1);
 

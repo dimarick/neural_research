@@ -59,6 +59,11 @@ public class RumelhartTest3 {
                             .set(new Dropout.Zero(new Random(random.nextLong()), dropoutA))
                             .set(rAlgo).parent()
 
+                            .addLayer((int)b)
+                            .set(new Activation.ReLU())
+                            .set(new Dropout.Zero(new Random(random.nextLong()), dropoutA))
+                            .set(rAlgo).parent()
+
                             .addLayer(10)
                             .set(rAlgo)
                             .parent();
