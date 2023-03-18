@@ -4,52 +4,52 @@ import linear.VectorF32;
 
 public class Loss {
     public interface Interface {
-        float apply(VectorF32 target, VectorF32 predicted);
+        float apply(VectorF32 error, VectorF32 predicted);
     }
 
     public static class CrossEntropyLoss implements Interface {
-        public float apply(VectorF32 target, VectorF32 predicted) {
+        public float apply(VectorF32 error, VectorF32 predicted) {
             var loss = 0.0f;
 
-            float[] targetData = target.getData();
+            float[] errorData = error.getData();
             float[] predictedData = predicted.getData();
 
-            for (var i = 0; i < targetData.length; i++) {
-                loss += targetData[i] * Math.log(1e-15 + predictedData[i]);
+            for (var i = 0; i < errorData.length; i++) {
+                loss += errorData[i] * Math.log(1e-15 + predictedData[i]);
             }
 
-            return -loss / target.getSize();
+            return -loss / error.getSize();
         }
     }
 
     public static class MeanAbsoluteErrorLoss implements Interface {
-        public float apply(VectorF32 target, VectorF32 predicted) {
+        public float apply(VectorF32 error, VectorF32 predicted) {
             var loss = 0.0f;
 
-            float[] targetData = target.getData();
+            float[] errorData = error.getData();
             float[] predictedData = predicted.getData();
 
-            for (var i = 0; i < targetData.length; i++) {
-                loss += Math.abs(targetData[i] - predictedData[i]);
+            for (var i = 0; i < errorData.length; i++) {
+                loss += Math.abs(errorData[i] - predictedData[i]);
             }
 
-            return loss / target.getSize();
+            return loss / error.getSize();
         }
     }
 
     public static class MeanSquaredErrorLoss implements Interface {
-        public float apply(VectorF32 target, VectorF32 predicted) {
+        public float apply(VectorF32 error, VectorF32 predicted) {
             var loss = 0.0f;
 
-            float[] targetData = target.getData();
+            float[] errorData = error.getData();
             float[] predictedData = predicted.getData();
 
-            for (var i = 0; i < targetData.length; i++) {
-                float e = targetData[i] - predictedData[i];
+            for (var i = 0; i < errorData.length; i++) {
+                float e = errorData[i] - predictedData[i];
                 loss += e * e;
             }
 
-            return loss / target.getSize();
+            return loss / error.getSize();
         }
     }
 
@@ -61,14 +61,13 @@ public class Loss {
             this.delta = delta;
         }
 
-        public float apply(VectorF32 target, VectorF32 predicted) {
+        public float apply(VectorF32 error, VectorF32 predicted) {
             var loss = 0.0f;
 
-            float[] targetData = target.getData();
-            float[] predictedData = predicted.getData();
+            float[] errorData = error.getData();
 
-            for (var i = 0; i < targetData.length; i++) {
-                float e = Math.abs(targetData[i] - predictedData[i]);
+            for (var i = 0; i < errorData.length; i++) {
+                float e = Math.abs(errorData[i]);
                 if (e > delta) {
                     loss += e * delta - 0.5 * delta * delta;
                 } else {
@@ -76,7 +75,7 @@ public class Loss {
                 }
             }
 
-            return loss / target.getSize();
+            return loss / error.getSize();
         }
     }
 }
