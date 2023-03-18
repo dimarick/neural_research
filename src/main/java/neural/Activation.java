@@ -44,6 +44,39 @@ public class Activation {
         }
     }
 
+
+    public static class LeakyReLU implements Interface {
+
+            @Override
+            public VectorF32 apply(VectorF32 vector) {
+                final var data = vector.getData();
+
+                for (var i = 0; i < data.length; i++) {
+                    //noinspection ManualMinMaxCalculation
+                    data[i] = data[i] > 0.0f ? data[i] : data[i] * 0.01f;
+                }
+
+                return vector;
+            }
+
+            @Override
+            public VectorF32 diff(VectorF32 vector, VectorF32 output) {
+                final var data = output.getData();
+                final var input = vector.getData();
+
+                for (var i = 0; i < data.length; i++) {
+                    data[i] = input[i] > 0.0f ? 1.0f : 0.01f;
+                }
+
+                return output;
+            }
+
+        @Override
+        public Loss.Interface suggestLoss() {
+            return new Loss.HuberLoss();
+        }
+    }
+
     public static class Softmax implements Interface {
 
         final private float alpha;
