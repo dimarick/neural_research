@@ -12,7 +12,7 @@ import java.util.zip.GZIPInputStream;
 
 public class RumelhartTest4 {
 
-    private static final int EPOCHS = 100;
+    private static final int EPOCHS = 50;
     private static final float INITIAL_SPEED = 0.5f;
 
     public static void main(String[] args) throws RuntimeException {
@@ -37,17 +37,14 @@ public class RumelhartTest4 {
 
             for (var i = 0; i <= 6; i++) {
                 var speed = INITIAL_SPEED;
-                for (var j = 0; j <= 10; j++) {
+                for (var j = 0; j <= 60; j++) {
                     var a = 160 * Math.pow(2, i);
-                    var b = 50 * Math.pow(2, j);
-                    var dropoutInput = 0.18f;
+                    var dropoutInput = 0.05f * (j % 6);
                     SecureRandom random = new SecureRandom(new byte[]{3});
                     var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
-                    var dropoutA = 0.01f * j * (float)Math.pow(1.2, j);
+                    var dropoutA = 0.01f * (int)(j / 6) * (float)Math.pow(1.2, (int)(j / 6));
 
                     var rAlgo = new Regularization.ElasticNet(1e-6f);
-
-                    System.out.println("Starting test with speed " + speed + "(" + a + ", " + 1e-6f + "), " + rAlgo.getClass().getSimpleName() + ", dropout I: " + dropoutInputAlgo.getClass().getSimpleName() + ", A:" + dropoutA);
 
                     var p = new RumelhartPerceptron(random, new Optimizer.StochasticGradientDescent())
                             .addLayer(28 * 28)
@@ -63,6 +60,8 @@ public class RumelhartTest4 {
                             .addLayer(10)
                             .set(rAlgo)
                             .parent();
+
+                    System.out.println("Starting test with speed " + speed + "(" + a + ", " + 1e-6f + "), volume " + p.volume() + ", dropout I: " + dropoutInputAlgo.getClass().getSimpleName() + ", " + dropoutInput + ", A:" + dropoutA);
 
                     result = train(testImages, testLabels, trainImages, trainLabels, speed, p);
 

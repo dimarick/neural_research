@@ -1,4 +1,5 @@
 import neural.*;
+import neural.optimizer.MomentumStochasticGradientDescent;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -35,27 +36,36 @@ public class RumelhartTest3 {
 
             var result = trainImages.length;
 
-            for (var i = 0; i <= 6; i++) {
+            for (var i = 0; i <= 8; i++) {
                 var speed = INITIAL_SPEED;
-                for (var j = 0; j <= 64; j++) {
+                for (var j = 0; j <= 0; j++) {
                     var a = 160 * Math.pow(2, i);
-                    var b = 50 * Math.pow(2, j);
-                    var dropoutInput = 0.06f * (j % 8);
-                    var dropoutA = 0.06f * (int)(j / 8);
+                    var b = 160 * Math.pow(2, j);
+                    var dropoutInput = 0.15;
+
+                    var dropoutA = switch ((int)a) {
+                        case 160 -> 0;
+                        case 320 -> 0;
+                        case 640 -> 0.012f;
+                        case 1280 -> 0.05f;
+                        case 2560 -> 0.07f;
+                        case 5120 -> 0.10f;
+                        case 5120*2 -> 0.10f;
+                        default -> 0;
+                    };
 
                     var rAlgo = new Regularization.ElasticNet(1e-6f);
 
-                    System.out.println("Starting test with speed " + speed + "(" + a + ", " + 1e-6f + "), " + rAlgo.getClass().getSimpleName() + ", dropout " + dropoutInput + " + " + dropoutA);
                     SecureRandom random = new SecureRandom(new byte[]{3});
 
-                    var p = new RumelhartPerceptron(random, new Optimizer.StochasticGradientDescent())
+                    var p = new RumelhartPerceptron(random, new MomentumStochasticGradientDescent(0.9f))
                             .addLayer(28 * 28)
-                            .set(new Activation.ReLU())
-                            .set(new Dropout.Rng(new Random(random.nextLong()), dropoutInput))
+                            .set(new Activation.LeakyReLU())
+                            .set(new Dropout.Zero(new Random(random.nextLong()), (float)dropoutInput))
                             .parent()
 
                             .addLayer((int)a)
-                            .set(new Activation.ReLU())
+                            .set(new Activation.LeakyReLU())
                             .set(new Dropout.Zero(new Random(random.nextLong()), dropoutA))
                             .set(rAlgo).parent()
 
@@ -68,6 +78,8 @@ public class RumelhartTest3 {
                             .set(rAlgo)
                             .parent();
 
+                    System.out.println("Starting test with speed " + speed + "(" + a + ", " + 1e-6f + "), volume: " + p.volume() + ", dropout " + dropoutInput + " + " + dropoutA);
+
                     result = train(testImages, testLabels, trainImages, trainLabels, speed, p);
 
                     var testStart = System.currentTimeMillis();
@@ -76,7 +88,7 @@ public class RumelhartTest3 {
 
                     var trainRate = ((float)result / trainImages.length) * 100;
 
-                    if (trainRate > 10 && speed > 0.005f) {
+                    if (trainRate > 10 && speed > INITIAL_SPEED * 0.001f) {
                         speed *= 0.7f;
                         j--;
                     }
