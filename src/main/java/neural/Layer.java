@@ -12,6 +12,7 @@ public final class Layer {
     public Loss.Interface loss;
     public Regularization.Interface regularization;
     public Dropout.Interface dropout;
+    public int[] dropoutIndexes;
 
     public Layer(RumelhartPerceptron parent, int size, MatrixF32 weights) {
         this.parent = parent;

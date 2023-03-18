@@ -23,6 +23,16 @@ public class RumelhartPerceptron {
         this.optimizer = optimizer;
     }
 
+    public int volume() {
+        var v = 0;
+
+        for (var layer : hiddenLayers) {
+            v += layer.weights.getData().length;
+        }
+
+        return v + outputLayer.weights.getData().length;
+    }
+
     public Layer addLayer(int size) {
         if (inputLayer == null) {
             inputLayer = new Layer(this, size, null);
@@ -75,7 +85,8 @@ public class RumelhartPerceptron {
     public float[] train(float[] sensorData, float[] target, float speed) {
         var layerInput = new VectorF32(sensorData.clone());
 
-        inputLayer.dropout.apply(layerInput);
+        inputLayer.dropoutIndexes = inputLayer.dropout.init(layerInput.getSize());
+        inputLayer.dropout.apply(layerInput, inputLayer.dropoutIndexes);
 
         var layerResult = new VectorF32[hiddenLayers.size() + 2];
         var layers = new Layer[hiddenLayers.size() + 2];
@@ -87,6 +98,8 @@ public class RumelhartPerceptron {
             Layer layer = hiddenLayers.get(i);
 
             layerInput = evalLayer(layerInput, layer);
+            layer.dropoutIndexes = layer.dropout.init(layerInput.getSize());
+            layer.dropout.apply(layerInput, layer.dropoutIndexes);
 
             layerResult[i + 1] = layerInput;
             layers[i + 1] = layer;
@@ -94,6 +107,8 @@ public class RumelhartPerceptron {
 
         var result = Ops.multiple(outputLayer.weights, layerInput);
         result = outputLayer.activation.apply(result);
+        outputLayer.dropoutIndexes = outputLayer.dropout.init(result.getSize());
+        outputLayer.dropout.apply(result, outputLayer.dropoutIndexes);
 
         layerResult[hiddenLayers.size() + 1] = result;
         layers[hiddenLayers.size() + 1] = outputLayer;
@@ -114,7 +129,6 @@ public class RumelhartPerceptron {
         var r = Ops.multiple(layer.weights, result, 1.0f, 0.0f);
 
         r = layer.activation.apply(r);
-        layer.dropout.apply(r);
 
         return r;
     }

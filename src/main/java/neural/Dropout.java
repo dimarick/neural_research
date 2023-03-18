@@ -9,7 +9,8 @@ import java.util.stream.IntStream;
 
 public class Dropout {
     public interface Interface {
-        void apply(VectorF32 result);
+        int[] init(int size);
+        void apply(VectorF32 result, int[] indexes);
         float getRate(VectorF32 result);
     }
 
@@ -22,8 +23,12 @@ public class Dropout {
             this.k = k;
         }
 
-        public void apply(VectorF32 result) {
-            var indexes = getInts(result);
+        @Override
+        public int[] init(int size) {
+            return getInts(size);
+        }
+
+        public void apply(VectorF32 result, int[] indexes) {
             float[] resultData = result.getData();
 
             for (var i :indexes) {
@@ -35,12 +40,12 @@ public class Dropout {
             return (1.0f / (1 - k));
         }
 
-        protected int[] getInts(VectorF32 result) {
-            if (result.getSize() == 0) {
+        protected int[] getInts(int size) {
+            if (size == 0) {
                 return new int[0];
             }
 
-            return readIntsFromRandomPool(random, -(int) (result.getSize() * Math.log(1 - k)), 0, result.getSize());
+            return readIntsFromRandomPool(random, -(int) (size * Math.log(1 - k)), 0, size);
         }
     }
 
@@ -49,8 +54,7 @@ public class Dropout {
             super(random, k);
         }
 
-        public void apply(VectorF32 result) {
-            var indexes = getInts(result);
+        public void apply(VectorF32 result, int[] indexes) {
             var values = readIntsFromRandomPool(random, indexes.length);
             float[] resultData = result.getData();
 
