@@ -8,16 +8,16 @@ import neural.Optimizer;
 
 import java.util.Arrays;
 
-public class StochasticGradientDescent implements Optimizer.Interface {
+public class BatchGradientDescent implements Optimizer.BatchInterface {
     protected static class SgdDataItem {
-        protected final VectorF32 diff;
+        protected final MatrixF32 diff;
         protected final VectorF32 error;
         protected final MatrixF32 errorMatrix;
         protected final VectorF32 gradient;
         protected float loss;
         protected int i;
 
-        protected SgdDataItem(VectorF32 diff, VectorF32 error, MatrixF32 errorMatrix, VectorF32 gradient, float loss, int i) {
+        protected SgdDataItem(MatrixF32 diff, VectorF32 error, MatrixF32 errorMatrix, VectorF32 gradient, float loss, int i) {
             this.diff = diff;
             this.error = error;
             this.errorMatrix = errorMatrix;
@@ -29,9 +29,9 @@ public class StochasticGradientDescent implements Optimizer.Interface {
 
     protected SgdDataItem[] sgdData;
 
-    public float apply(Layer[] layers, VectorF32[] layerResults, VectorF32 target, float eta) {
+    public float apply(Layer[] layers, MatrixF32[] layerResults, MatrixF32 target, float eta) {
         if (sgdData == null) {
-            initStaticMemory(layers);
+            initStaticMemory(layers, layerResults[0].getRows());
         }
 
         applyBackpropagation(layers, layerResults, target);
@@ -45,29 +45,31 @@ public class StochasticGradientDescent implements Optimizer.Interface {
         return (float) Arrays.stream(sgdData).mapToDouble(m -> (double) m.loss).sum();
     }
 
-    protected void updateWeights(Layer[] layers, VectorF32[] layerResults, float eta) {
+    protected void updateWeights(Layer[] layers, MatrixF32[] layerResults, float eta) {
         Arrays.stream(sgdData).skip(1).forEach(sgdItem -> updateLayerWeights(layers, layerResults, eta, sgdItem));
     }
 
-    protected void updateLayerWeights(Layer[] layers, VectorF32[] layerResults, float eta, SgdDataItem sgdItem) {
+    protected void updateLayerWeights(Layer[] layers, MatrixF32[] layerResults, float eta, SgdDataItem sgdItem) {
         var i = sgdItem.i;
         var layer = layers[i];
-        Ops.multiple(new MatrixF32(sgdItem.gradient.getSize(), 1, sgdItem.gradient.getData()), new MatrixF32(1, layerResults[i - 1].getSize(), layerResults[i - 1].getData()), layer.weights, -eta * sgdItem.loss * layer.dropout.getRate(), 1.0f);
+        MatrixF32 inputResult = layerResults[i - 1];
+        var batchSize = inputResult.getRows();
+        Ops.multiple(new MatrixF32(batchSize, layer.size, sgdItem.gradient.getData()).transpose(), inputResult, layer.weights, -eta * sgdItem.loss * layer.dropout.getRate(), 1.0f);
     }
 
-    protected void calculateGradients(Layer[] layers, VectorF32[] layerResults) {
+    protected void calculateGradients(Layer[] layers, MatrixF32[] layerResults) {
         Arrays.stream(sgdData).skip(1).forEach(mem -> {
             var i = mem.i;
             var layer = layers[i];
-            Ops.multipleBand(mem.error, mem.diff, mem.gradient, 1.0f, 0.0f);
+            Ops.multipleBand(mem.error, new VectorF32(mem.diff.getData()), mem.gradient, 1.0f, 0.0f);
 
-            var layerLoss = layer.loss.apply(mem.gradient, layerResults[i]);
+            var layerLoss = layer.loss.apply(mem.gradient, new VectorF32(layerResults[i].getData()));
             // fast gradient clipping
             mem.loss = Math.signum(layerLoss) * Math.min(2, Math.abs(layerLoss));
         });
     }
 
-    protected void applyBackpropagation(Layer[] layers, VectorF32[] layerResults, VectorF32 target) {
+    protected void applyBackpropagation(Layer[] layers, MatrixF32[] layerResults, MatrixF32 target) {
         int outLayerId = layerResults.length - 1;
         var result = layerResults[outLayerId];
         var outputLayer = layers[outLayerId];
@@ -75,7 +77,7 @@ public class StochasticGradientDescent implements Optimizer.Interface {
         var outMemory = sgdData[outLayerId];
 
         outMemory.i = sgdData.length - 1;
-        outputLayer.activation.diff(result, outMemory.diff);
+        outputLayer.activation.diffBatch(result, outMemory.diff);
         outputLayer.dropout.apply(outMemory.diff, outputLayer.dropoutIndexes);
 
         System.arraycopy(result.getData(), 0, outMemory.error.getData(), 0, target.getData().length);
@@ -86,22 +88,22 @@ public class StochasticGradientDescent implements Optimizer.Interface {
             var mem = sgdData[i];
 
             mem.i = i;
-            layer.activation.diff(layerResults[i], mem.diff).getData();
+            layer.activation.diffBatch(layerResults[i], mem.diff);
             layer.dropout.apply(mem.diff, layer.dropoutIndexes);
             Ops.multiple(sgdData[i + 1].errorMatrix, layers[i + 1].weights.transpose(), mem.errorMatrix, 1.0f, 0.0f).getData();
         }
     }
 
-    protected void initStaticMemory(Layer[] layers) {
+    protected void initStaticMemory(Layer[] layers, int batchSize) {
         sgdData = new SgdDataItem[layers.length];
         for (var i = 0; i < layers.length; i++) {
-            initLayerStaticMemory(i, layers[i]);
+            initLayerStaticMemory(i, layers[i], batchSize);
         }
     }
 
-    protected void initLayerStaticMemory(int i, Layer layer) {
-        var size = layer.size;
+    protected void initLayerStaticMemory(int i, Layer layer, int batchSize) {
+        var size = layer.size * batchSize;
         var err = new float[size];
-        sgdData[i] = new SgdDataItem(new VectorF32(new float[size]), new VectorF32(err), new MatrixF32(1, err.length, err), new VectorF32(new float[size]), 0, 0);
+        sgdData[i] = new SgdDataItem(new MatrixF32(batchSize, layer.size, new float[size]), new VectorF32(err), new MatrixF32(batchSize, layer.size, err), new VectorF32(new float[size]), 0, 0);
     }
 }

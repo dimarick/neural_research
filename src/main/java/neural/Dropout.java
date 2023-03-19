@@ -1,5 +1,6 @@
 package neural;
 
+import linear.MatrixF32;
 import linear.VectorF32;
 
 import java.util.Arrays;
@@ -11,7 +12,8 @@ public class Dropout {
     public interface Interface {
         int[] init(int size);
         void apply(VectorF32 result, int[] indexes);
-        float getRate(VectorF32 result);
+        void apply(MatrixF32 result, int[] indexes);
+        float getRate();
     }
 
     public static class Zero implements Interface {
@@ -36,7 +38,15 @@ public class Dropout {
             }
         }
 
-        public float getRate(VectorF32 result) {
+        public void apply(MatrixF32 result, int[] indexes) {
+            float[] resultData = result.getData();
+
+            for (var i :indexes) {
+                resultData[i] = 0.0f;
+            }
+        }
+
+        public float getRate() {
             return (1.0f / (1 - k));
         }
 

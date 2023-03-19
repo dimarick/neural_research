@@ -21,12 +21,13 @@ public class Ops {
     }
 
     public static VectorF32 multiple(VectorF32 vector, MatrixF32 matrix, VectorF32 result, float alpha, float beta) {
-        getBlas().sgemv("N",
-                matrix.getRows(),
-                matrix.getColumns(),
+        getBlas().sgemv(
+                matrix.isTransposed() ? "T" : "N",
+                matrix.isTransposed() ? matrix.getRows() : matrix.getColumns(),
+                matrix.isTransposed() ? matrix.getColumns() : matrix.getRows(),
                 alpha,
                 matrix.getData(),
-                matrix.getRows(),
+                matrix.isTransposed() ? matrix.getRows() : matrix.getColumns(),
                 vector.getData(),
                 1,
                 beta,
@@ -39,12 +40,12 @@ public class Ops {
 
     public static VectorF32 multiple(MatrixF32 matrix, VectorF32 vector, VectorF32 result, float alpha, float beta) {
         getBlas().sgemv(
-                "T",
-                matrix.getColumns(),
-                matrix.getRows(),
+                matrix.isTransposed() ? "T" : "N",
+                matrix.isTransposed() ? matrix.getColumns() : matrix.getRows(),
+                matrix.isTransposed() ? matrix.getRows() : matrix.getColumns(),
                 alpha,
                 matrix.getData(),
-                matrix.getColumns(),
+                matrix.isTransposed() ? matrix.getColumns() : matrix.getRows(),
                 vector.getData(),
                 1,
                 beta,
@@ -70,7 +71,7 @@ public class Ops {
         return multiple(matrix, vector, result, alpha, beta);
     }
     public static VectorF32 multiple(VectorF32 vector, MatrixF32 matrix, float alpha, float beta) {
-        var result = new VectorF32(matrix.getRows());
+        var result = new VectorF32(matrix.getColumns());
 
         return multiple(vector, matrix, result, alpha, beta);
     }
@@ -130,12 +131,44 @@ public class Ops {
         return y;
     }
 
+    public static void copy(float[] x, float[] y) {
+        getBlas().scopy(x.length, x, 1, y, 1);
+    }
+
     private static void multipleF32Blas(float[] resultData, MatrixF32 matrix1, MatrixF32 matrix2, float[] data1, float[] data2, float alpha, float beta) {
-        getBlas().sgemm("N", "N",
-                matrix2.getColumns(), matrix1.getRows(),
-                matrix2.getRows(), alpha, data2, 0, matrix2.getColumns(),
-                data1, 0, matrix1.getColumns(),
+        getBlas().sgemm(
+                matrix2.isTransposed() ? "T" : "N",
+                matrix1.isTransposed() ? "T" : "N",
+                matrix2.getColumns(),
+                matrix1.getRows(),
+                matrix2.getRows(),
+                alpha,
+                data2,
+                0,
+                matrix2.isTransposed() ? matrix2.getRows() : matrix2.getColumns(),
+                data1,
+                0,
+                matrix1.isTransposed() ? matrix1.getRows() : matrix1.getColumns(),
                 beta,
-                resultData, 0, matrix2.getColumns());
+                resultData,
+                0,
+                matrix2.getColumns());
+//        getBlas().sgemm(
+//                matrix1.isTransposed() ? "T" : "N",
+//                matrix2.isTransposed() ? "T" : "N",
+//                matrix2.isTransposed() ? matrix2.getRows() : matrix2.getColumns(),
+//                matrix1.isTransposed() ? matrix1.getColumns() : matrix1.getRows(),
+//                matrix2.isTransposed() ? matrix2.getColumns() : matrix2.getRows(),
+//                alpha,
+//                data2,
+//                0,
+//                matrix2.isTransposed() ? matrix2.getRows() : matrix2.getColumns(),
+//                data1,
+//                0,
+//                matrix1.isTransposed() ? matrix1.getRows() : matrix1.getColumns(),
+//                beta,
+//                resultData,
+//                0,
+//                matrix2.isTransposed() ? matrix2.getRows() : matrix2.getColumns());
     }
 }

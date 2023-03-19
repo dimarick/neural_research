@@ -27,7 +27,7 @@ public class MomentumStochasticGradientDescent extends StochasticGradientDescent
             return;
         }
 
-        Ops.multiple(sgdItem.gradient, layerResults[i - 1], momentum.w, -eta * sgdItem.loss * layer.dropout.getRate(layerResults[i - 1]) * (1 - alpha), alpha);
+        Ops.multiple(sgdItem.gradient, layerResults[i - 1], momentum.w, -eta * sgdItem.loss * layer.dropout.getRate() * (1 - alpha), alpha);
         Ops.add(momentum.w.getData(), layer.weights.getData(), 1.0f);
     }
 

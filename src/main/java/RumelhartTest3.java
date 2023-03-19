@@ -1,5 +1,5 @@
 import neural.*;
-import neural.optimizer.MomentumStochasticGradientDescent;
+import neural.optimizer.StochasticGradientDescent;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -58,7 +58,7 @@ public class RumelhartTest3 {
 
                     SecureRandom random = new SecureRandom(new byte[]{3});
 
-                    var p = new RumelhartPerceptron(random, new MomentumStochasticGradientDescent(0.9f))
+                    var p = new RumelhartPerceptron(random, new StochasticGradientDescent())
                             .addLayer(28 * 28)
                             .set(new Activation.LeakyReLU())
                             .set(new Dropout.Zero(new Random(random.nextLong()), (float)dropoutInput))
@@ -70,7 +70,7 @@ public class RumelhartTest3 {
                             .set(rAlgo).parent()
 
                             .addLayer((int)b)
-                            .set(new Activation.ReLU())
+                            .set(new Activation.LeakyReLU())
                             .set(new Dropout.Zero(new Random(random.nextLong()), dropoutA))
                             .set(rAlgo).parent()
 

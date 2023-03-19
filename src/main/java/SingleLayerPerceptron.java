@@ -58,7 +58,7 @@ public class SingleLayerPerceptron {
 
         for (var i = 0; i < outputLayerSize; i++) {
             float delta = speed * (target[i] - result[i]);
-            int i1 = i * this.weights.columns;
+            int i1 = i * this.weights.getColumns();
             for (var j = 0; j < sensorLayerSize; j++) {
                 weights[i1 + j] += delta * sensorData[j];
             }

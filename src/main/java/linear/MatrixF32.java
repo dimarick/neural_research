@@ -1,9 +1,21 @@
 package linear;
 
 public class MatrixF32 {
-    final int rows;
-    final public int columns;
+    private  final int rows;
+    private final int columns;
+    private boolean transposed = false;
     float[] data;
+
+    public MatrixF32(int rows, int columns, float[] data, boolean transposed) {
+        this.rows = rows;
+        this.columns = columns;
+        this.data = data;
+        this.transposed = transposed;
+
+        if (data.length != rows * columns) {
+            throw new ArrayIndexOutOfBoundsException("data length is invalid");
+        }
+    }
 
     public MatrixF32(int rows, int columns, float[] data) {
         this.rows = rows;
@@ -29,11 +41,23 @@ public class MatrixF32 {
         return columns;
     }
 
+    public int getSize() {
+        return rows * columns;
+    }
+
+    public boolean isTransposed() {
+        return transposed;
+    }
+
     public float[] getData() {
         return data;
     }
+//
+//    public void setData(float[] data) {
+//        this.data = data;
+//    }
 
-    public void setData(float[] data) {
-        this.data = data;
+    public MatrixF32 transpose() {
+        return new MatrixF32(this.columns, this.rows, data, !transposed);
     }
 }

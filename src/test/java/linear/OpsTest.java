@@ -7,6 +7,7 @@ import org.jblas.SimpleBlas;
 import org.junit.Test;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;

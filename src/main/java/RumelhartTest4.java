@@ -1,10 +1,12 @@
 import neural.*;
+import neural.optimizer.BatchGradientDescent;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Random;
@@ -13,7 +15,8 @@ import java.util.zip.GZIPInputStream;
 public class RumelhartTest4 {
 
     private static final int EPOCHS = 50;
-    private static final float INITIAL_SPEED = 0.5f;
+    private static final float INITIAL_SPEED = 0.4f;
+    public static final int BATCH_SIZE = 1;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -37,8 +40,8 @@ public class RumelhartTest4 {
 
             for (var i = 0; i <= 6; i++) {
                 var speed = INITIAL_SPEED;
-                for (var j = 0; j <= 60; j++) {
-                    var a = 160 * Math.pow(2, i);
+                for (var j = 20; j <= 60; j++) {
+                    var a = 1280 * Math.pow(2, i);
                     var dropoutInput = 0.05f * (j % 6);
                     SecureRandom random = new SecureRandom(new byte[]{3});
                     var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
@@ -46,15 +49,15 @@ public class RumelhartTest4 {
 
                     var rAlgo = new Regularization.ElasticNet(1e-6f);
 
-                    var p = new RumelhartPerceptron(random, new Optimizer.StochasticGradientDescent())
+                    var p = new RumelhartPerceptron(random, new BatchGradientDescent())
                             .addLayer(28 * 28)
-                            .set(new Activation.ReLU())
+                            .set(new Activation.LeakyReLU())
                             .set(dropoutInputAlgo)
                             .parent()
 
                             .addLayer((int)a)
-                            .set(new Activation.ReLU())
-                            .set(new Dropout.Zero(new Random(random.nextLong()), dropoutA))
+                            .set(new Activation.LeakyReLU())
+                            .set(new Dropout.Zero(new Random(random.nextLong()), 0.0f))
                             .set(rAlgo).parent()
 
                             .addLayer(10)
@@ -67,16 +70,16 @@ public class RumelhartTest4 {
 
                     var testStart = System.currentTimeMillis();
 
-                    var fail = test(testImages, testLabels, p);
+                    var fail = testBatch(testImages, testLabels, p);
 
-                    var trainRate = ((float)result / trainImages.length) * 100;
+                    var trainRate = ((float)result / trainLabels.length) * 100;
 
                     if (trainRate > 10 && speed > 0.005f) {
                         speed *= 0.7f;
                         j--;
                     }
 
-                    var testRate = (fail / testImages.length) * 100;
+                    var testRate = (fail / testLabels.length) * 100;
                     System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + trainRate + "% " + ". Test Error rate is: " + testRate + "%");
                 }
             }
@@ -87,16 +90,26 @@ public class RumelhartTest4 {
         }
     }
 
-    private static int train(float[][] testImages, byte[] testLabels, float[][] trainImages, byte[] trainLabels, float speed, RumelhartPerceptron p) {
+    private static int train(float[] testImages, byte[] testLabels, float[] trainImages, byte[] trainLabels, float speed, RumelhartPerceptron p) {
         var order = new LinkedList<Integer>();
 
-        int trainSize = 60000;//trainImages.length;
-        for (var i = 0; i < trainImages.length; i++) {
+        int imageSize = p.inputSize();
+
+        int imageCount = trainImages.length / imageSize;
+        int trainSize = 60000;//imageCount;
+        int testSize = testImages.length / imageSize;//imageCount;
+
+        for (var i = 0; i < imageCount; i++) {
             order.add(i);
         }
 
         var fail = 0;
         var failRate = 0.1f;
+
+        var batchSize = BATCH_SIZE;
+
+        var imagesBuffer = new float[imageSize * batchSize];
+        var labelsBuffer = new float[10 * batchSize];
 
         for (var epoch = 0; epoch < EPOCHS; epoch++) {
             fail = 0;
@@ -105,21 +118,30 @@ public class RumelhartTest4 {
             // Перемешивание образцов ускоряет сходимость сети
             Collections.shuffle(order);
 
+            var j = 0;
             for (var i : order.subList(0, trainSize)) {
                 byte label = trainLabels[i];
-                var target = createTargetForLabel(label);
-                var r = p.train(trainImages[i], target, speed);
-                if (getAnswer(r) != label) {
-                    fail++;
+                System.arraycopy(createTargetForLabel(label), 0, labelsBuffer, j * 10, 10);
+                System.arraycopy(trainImages, i * imageSize, imagesBuffer, j * imageSize, imageSize);
+                j++;
+
+                if (j >= batchSize) {
+                    j = 0;
+                    var r = p.trainBatch(imagesBuffer, labelsBuffer, speed);
+                    for (var k = 0; k < batchSize; k++) {
+                        if (getAnswer(Arrays.copyOfRange(r, k * 10, (k + 1) * 10)) != getAnswer(Arrays.copyOfRange(labelsBuffer, k * 10, (k + 1) * 10))) {
+                            fail++;
+                        }
+                    }
                 }
             }
 
             failRate = ((float) fail / trainSize);
 
-            var testFail = test(testImages, testLabels, p);
+            var testFail = testBatch(testImages, testLabels, p);
 
             var epochTime = System.currentTimeMillis() - epochStart;
-            float testRate = (testFail / testImages.length);
+            float testRate = (testFail / testSize);
 
             float bias = testRate * 100 - failRate * 100;
 
@@ -133,15 +155,14 @@ public class RumelhartTest4 {
         return fail;
     }
 
-    private static float test(float[][] testImages, byte[] testLabels, RumelhartPerceptron p) {
-
+    private static float testBatch(float[] testImages, byte[] testLabels, RumelhartPerceptron p) {
         var fail = 0.0f;
+        var results = p.evalBatch(testImages);
 
-        for (var i = 0; i < testImages.length; i++) {
+        for (var i = 0; i < testLabels.length; i++) {
             byte label = testLabels[i];
-            var result = p.eval(testImages[i]);
 
-            int answer = getAnswer(result);
+            int answer = getAnswer(Arrays.copyOfRange(results, 10 * i, 10 * (i + 1)));
 
             if (answer != label) {
                 fail++;
@@ -173,7 +194,7 @@ public class RumelhartTest4 {
         return result;
     }
 
-    private static float[][] getImages(FileInputStream testFile) throws IOException {
+    private static float[] getImages(FileInputStream testFile) throws IOException {
         final var testImages = new GZIPInputStream(testFile);
         final var testImagesData = new DataInputStream(testImages);
         final var magic = testImagesData.readInt();
@@ -185,7 +206,8 @@ public class RumelhartTest4 {
         final var count = testImagesData.readInt();
         final var rows = testImagesData.readInt();
         final var columns = testImagesData.readInt();
-        final var images = new float[count][rows * columns];
+        int size = rows * columns;
+        final var images = new float[count * size];
 
         int image = 0;
 
@@ -194,7 +216,7 @@ public class RumelhartTest4 {
                 byte[] bytes = testImagesData.readNBytes(rows * columns);
 
                 for (var i = 0; i < bytes.length; i++) {
-                    images[image][i] = normalize(bytes[i]);
+                    images[image * size + i] = normalize(bytes[i]);
                 }
 
                 image++;
