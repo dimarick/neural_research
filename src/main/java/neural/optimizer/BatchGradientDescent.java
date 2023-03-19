@@ -54,7 +54,8 @@ public class BatchGradientDescent implements Optimizer.BatchInterface {
         var layer = layers[i];
         MatrixF32 inputResult = layerResults[i - 1];
         var batchSize = inputResult.getRows();
-        Ops.multiple(new MatrixF32(batchSize, layer.size, sgdItem.gradient.getData()).transpose(), inputResult, layer.weights, -eta * sgdItem.loss * layer.dropout.getRate(), 1.0f);
+        MatrixF32 gradientMatrix = new MatrixF32(batchSize, layer.size, sgdItem.gradient.getData()).transpose();
+        Ops.multiple(gradientMatrix, inputResult, layer.weights, -eta * sgdItem.loss * layer.dropout.getRate(), 1.0f);
     }
 
     protected void calculateGradients(Layer[] layers, MatrixF32[] layerResults) {

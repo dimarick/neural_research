@@ -153,22 +153,5 @@ public class Ops {
                 resultData,
                 0,
                 matrix2.getColumns());
-//        getBlas().sgemm(
-//                matrix1.isTransposed() ? "T" : "N",
-//                matrix2.isTransposed() ? "T" : "N",
-//                matrix2.isTransposed() ? matrix2.getRows() : matrix2.getColumns(),
-//                matrix1.isTransposed() ? matrix1.getColumns() : matrix1.getRows(),
-//                matrix2.isTransposed() ? matrix2.getColumns() : matrix2.getRows(),
-//                alpha,
-//                data2,
-//                0,
-//                matrix2.isTransposed() ? matrix2.getRows() : matrix2.getColumns(),
-//                data1,
-//                0,
-//                matrix1.isTransposed() ? matrix1.getRows() : matrix1.getColumns(),
-//                beta,
-//                resultData,
-//                0,
-//                matrix2.isTransposed() ? matrix2.getRows() : matrix2.getColumns());
     }
 }

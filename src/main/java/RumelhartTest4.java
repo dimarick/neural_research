@@ -1,5 +1,5 @@
 import neural.*;
-import neural.optimizer.BatchGradientDescent;
+import neural.optimizer.BatchMomentumStochasticGradientDescent;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -14,9 +14,9 @@ import java.util.zip.GZIPInputStream;
 
 public class RumelhartTest4 {
 
-    private static final int EPOCHS = 50;
+    private static final int EPOCHS = 100;
     private static final float INITIAL_SPEED = 0.4f;
-    public static final int BATCH_SIZE = 1;
+    public static final int BATCH_SIZE = 10;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -40,8 +40,8 @@ public class RumelhartTest4 {
 
             for (var i = 0; i <= 6; i++) {
                 var speed = INITIAL_SPEED;
-                for (var j = 20; j <= 60; j++) {
-                    var a = 1280 * Math.pow(2, i);
+                for (var j = 0; j <= 60; j++) {
+                    var a = 160 * Math.pow(2, i);
                     var dropoutInput = 0.05f * (j % 6);
                     SecureRandom random = new SecureRandom(new byte[]{3});
                     var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
@@ -49,7 +49,7 @@ public class RumelhartTest4 {
 
                     var rAlgo = new Regularization.ElasticNet(1e-6f);
 
-                    var p = new RumelhartPerceptron(random, new BatchGradientDescent())
+                    var p = new RumelhartPerceptron(random, new BatchMomentumStochasticGradientDescent(0.9f))
                             .addLayer(28 * 28)
                             .set(new Activation.LeakyReLU())
                             .set(dropoutInputAlgo)

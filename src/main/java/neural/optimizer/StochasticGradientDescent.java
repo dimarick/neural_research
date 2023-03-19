@@ -52,7 +52,7 @@ public class StochasticGradientDescent implements Optimizer.Interface {
     protected void updateLayerWeights(Layer[] layers, VectorF32[] layerResults, float eta, SgdDataItem sgdItem) {
         var i = sgdItem.i;
         var layer = layers[i];
-        Ops.multiple(new MatrixF32(sgdItem.gradient.getSize(), 1, sgdItem.gradient.getData()), new MatrixF32(1, layerResults[i - 1].getSize(), layerResults[i - 1].getData()), layer.weights, -eta * sgdItem.loss * layer.dropout.getRate(), 1.0f);
+        Ops.multiple(sgdItem.gradient, layerResults[i - 1], layer.weights, -eta * sgdItem.loss * layer.dropout.getRate(), 1.0f);
     }
 
     protected void calculateGradients(Layer[] layers, VectorF32[] layerResults) {

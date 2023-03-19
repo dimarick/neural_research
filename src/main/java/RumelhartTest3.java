@@ -1,5 +1,5 @@
 import neural.*;
-import neural.optimizer.StochasticGradientDescent;
+import neural.optimizer.MomentumStochasticGradientDescent;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -14,7 +14,7 @@ import java.util.zip.GZIPInputStream;
 public class RumelhartTest3 {
 
     private static final int EPOCHS = 50;
-    private static final float INITIAL_SPEED = 0.5f;
+    private static final float INITIAL_SPEED = 0.4f;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -41,7 +41,7 @@ public class RumelhartTest3 {
                 for (var j = 0; j <= 0; j++) {
                     var a = 160 * Math.pow(2, i);
                     var b = 160 * Math.pow(2, j);
-                    var dropoutInput = 0.15;
+                    var dropoutInput = 0;
 
                     var dropoutA = switch ((int)a) {
                         case 160 -> 0;
@@ -58,18 +58,13 @@ public class RumelhartTest3 {
 
                     SecureRandom random = new SecureRandom(new byte[]{3});
 
-                    var p = new RumelhartPerceptron(random, new StochasticGradientDescent())
+                    var p = new RumelhartPerceptron(random, new MomentumStochasticGradientDescent(0.9f))
                             .addLayer(28 * 28)
                             .set(new Activation.LeakyReLU())
                             .set(new Dropout.Zero(new Random(random.nextLong()), (float)dropoutInput))
                             .parent()
 
                             .addLayer((int)a)
-                            .set(new Activation.LeakyReLU())
-                            .set(new Dropout.Zero(new Random(random.nextLong()), dropoutA))
-                            .set(rAlgo).parent()
-
-                            .addLayer((int)b)
                             .set(new Activation.LeakyReLU())
                             .set(new Dropout.Zero(new Random(random.nextLong()), dropoutA))
                             .set(rAlgo).parent()
