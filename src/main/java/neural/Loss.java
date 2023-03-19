@@ -27,10 +27,9 @@ public class Loss {
             var loss = 0.0f;
 
             float[] errorData = error.getData();
-            float[] predictedData = predicted.getData();
 
             for (var i = 0; i < errorData.length; i++) {
-                loss += Math.abs(errorData[i] - predictedData[i]);
+                loss += Math.abs(errorData[i]);
             }
 
             return loss / error.getSize();
@@ -42,10 +41,9 @@ public class Loss {
             var loss = 0.0f;
 
             float[] errorData = error.getData();
-            float[] predictedData = predicted.getData();
 
             for (var i = 0; i < errorData.length; i++) {
-                float e = errorData[i] - predictedData[i];
+                float e = errorData[i];
                 loss += e * e;
             }
 
