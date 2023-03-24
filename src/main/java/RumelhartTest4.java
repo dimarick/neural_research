@@ -1,5 +1,8 @@
 import neural.*;
-import neural.optimizer.BatchMomentumStochasticGradientDescent;
+import neural.optimizer.AdaGradBatch;
+import neural.optimizer.MomentumBatchGradientDescent;
+import neural.optimizer.NesterovBatchGradientDescent;
+import neural.optimizer.RMSPropBatch;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -12,10 +15,13 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
+/**
+ * Подбор дропаута ассоциативных слоев
+ */
 public class RumelhartTest4 {
 
-    private static final int EPOCHS = 100;
-    private static final float INITIAL_SPEED = 0.4f;
+    private static final int EPOCHS = 50;
+    private static final float INITIAL_SPEED = 0.003f;
     public static final int BATCH_SIZE = 10;
 
     public static void main(String[] args) throws RuntimeException {
@@ -40,16 +46,19 @@ public class RumelhartTest4 {
 
             for (var i = 0; i <= 6; i++) {
                 var speed = INITIAL_SPEED;
-                for (var j = 0; j <= 60; j++) {
-                    var a = 160 * Math.pow(2, i);
-                    var dropoutInput = 0.05f * (j % 6);
-                    SecureRandom random = new SecureRandom(new byte[]{3});
+                for (var j = 0; j <= 6; j++) {
+                    var a = 80 * Math.pow(2, i);
+                    var dropoutInput = 0.05f;
+                    var random = new SecureRandom(new byte[]{3});
                     var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
-                    var dropoutA = 0.01f * (int)(j / 6) * (float)Math.pow(1.2, (int)(j / 6));
+                    var dropoutA = 0.015f * j * (float)Math.pow(1.2, j + i);
 
                     var rAlgo = new Regularization.ElasticNet(1e-6f);
 
-                    var p = new RumelhartPerceptron(random, new BatchMomentumStochasticGradientDescent(0.9f))
+                    var p = new RumelhartPerceptron(random, new RMSPropBatch(0.9f))
+//                    var p = new RumelhartPerceptron(random, new AdaGradBatch())
+//                    var p = new RumelhartPerceptron(random, new MomentumBatchGradientDescent(0.93f))
+//                    var p = new RumelhartPerceptron(random, new NesterovBatchGradientDescent(0.7f))
                             .addLayer(28 * 28)
                             .set(new Activation.LeakyReLU())
                             .set(dropoutInputAlgo)
@@ -57,7 +66,12 @@ public class RumelhartTest4 {
 
                             .addLayer((int)a)
                             .set(new Activation.LeakyReLU())
-                            .set(new Dropout.Zero(new Random(random.nextLong()), 0.0f))
+                            .set(new Dropout.Zero(new Random(random.nextLong()), dropoutA))
+                            .set(rAlgo).parent()
+
+                            .addLayer((int)a)
+                            .set(new Activation.LeakyReLU())
+                            .set(new Dropout.Zero(new Random(random.nextLong()), dropoutA))
                             .set(rAlgo).parent()
 
                             .addLayer(10)
@@ -110,6 +124,7 @@ public class RumelhartTest4 {
 
         var imagesBuffer = new float[imageSize * batchSize];
         var labelsBuffer = new float[10 * batchSize];
+        var testRateAvg = -1f;
 
         for (var epoch = 0; epoch < EPOCHS; epoch++) {
             fail = 0;
@@ -145,7 +160,9 @@ public class RumelhartTest4 {
 
             float bias = testRate * 100 - failRate * 100;
 
-            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + speed + ". Test error rate is: " + testRate * 100 + "%. bias: " + bias);
+            testRateAvg = testRateAvg == -1 ? testRate * 0.5f : 0.1f * testRate + testRateAvg * 0.9f;
+
+            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + speed + ". Test error rate is: " + testRate * 100 + "%. (" + testRateAvg * 100 + "%). bias: " + bias);
 
             if (fail == 0 || failRate > 0.6) {
                 break;

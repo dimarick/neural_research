@@ -10,6 +10,9 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
+/**
+ * Подбор параметров регуляризации
+ */
 public class RumelhartTest2 {
 
     private static final int EPOCHS = 50;
