@@ -32,7 +32,7 @@
                     <compilerArgs>
                         <arg>--enable-preview</arg>
                         <arg>--add-modules</arg>
-                        <arg>jdk.incubator.concurrent</arg>
+                        <arg>jdk.incubator.vector</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
