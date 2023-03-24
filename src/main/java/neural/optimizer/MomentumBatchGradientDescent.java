@@ -4,14 +4,14 @@ import linear.MatrixF32;
 import linear.Ops;
 import neural.Layer;
 
-public class BatchMomentumStochasticGradientDescent extends BatchGradientDescent {
+public class MomentumBatchGradientDescent extends BatchGradientDescent {
     private record MomentumItem(MatrixF32 w) {}
     private MomentumItem[] momentumData;
     private float alpha = 0.9f;
 
-    public BatchMomentumStochasticGradientDescent() {}
+    public MomentumBatchGradientDescent() {}
 
-    public BatchMomentumStochasticGradientDescent(float alpha) {
+    public MomentumBatchGradientDescent(float alpha) {
         this.alpha = alpha;
     }
 

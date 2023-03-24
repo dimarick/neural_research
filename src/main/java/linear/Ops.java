@@ -1,8 +1,13 @@
 package linear;
 
 import dev.ludovic.netlib.BLAS;
+import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorSpecies;
 
 public class Ops {
+
+    public static final VectorSpecies<Float> species = FloatVector.SPECIES_MAX;
+
     public static VectorF32 multipleBand(VectorF32 vector1, VectorF32 vector2, VectorF32 result, float alpha, float beta) {
         getBlas().ssbmv("L",
                 vector1.getSize(),
@@ -125,14 +130,30 @@ public class Ops {
         return result;
     }
 
+    public static MatrixF32 multiple(MatrixF32 matrix1, float alpha) {
+        getBlas().sscal(matrix1.getSize(), alpha, matrix1.getData(), 1);
+
+        return matrix1;
+    }
+
+    public static void add(MatrixF32 x, MatrixF32 y, float alpha) {
+        getBlas().saxpy(x.getSize(), alpha, x.getData(), 1, y.getData(), 1);
+    }
+
+    public static void add(VectorF32 x, VectorF32 y, float alpha) {
+        getBlas().saxpy(x.getSize(), alpha, x.getData(), 1, y.getData(), 1);
+    }
+
     public static float[] add(float[] x, float[] y, float alpha) {
         getBlas().saxpy(x.length, alpha, x, 1, y, 1);
 
         return y;
     }
 
-    public static void copy(float[] x, float[] y) {
-        getBlas().scopy(x.length, x, 1, y, 1);
+    public static float max(float[] x) {
+        var i = getBlas().isamax(x.length, x, 1);
+
+        return x[i];
     }
 
     private static void multipleF32Blas(float[] resultData, MatrixF32 matrix1, MatrixF32 matrix2, float[] data1, float[] data2, float alpha, float beta) {

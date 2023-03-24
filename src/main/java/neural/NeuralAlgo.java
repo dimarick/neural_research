@@ -15,9 +15,13 @@ public class NeuralAlgo {
     final private static int[] randomPool = new int[1048576];
     private static int randomPoolCursor = randomPool.length;
 
-    private static void parallel(BiConsumer<Integer, Integer> task) {
+    public static void parallel(BiConsumer<Integer, Integer> task) {
         int cores = Runtime.getRuntime().availableProcessors();
-        IntStream.rangeClosed(0, cores).parallel().forEach(t -> task.accept(t, cores));
+        parallel(task, cores);
+    }
+
+    public static void parallel(BiConsumer<Integer, Integer> task, int cores) {
+        IntStream.range(0, cores).parallel().forEach(t -> task.accept(t, cores));
     }
 
     private static int[] readIntsFromRandomPool(Random random, int n, int min, int max) {

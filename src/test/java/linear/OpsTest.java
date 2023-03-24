@@ -1,5 +1,6 @@
 package linear;
 
+import jdk.incubator.vector.FloatVector;
 import nu.pattern.OpenCV;
 import org.jblas.FloatMatrix;
 import org.jblas.NativeBlas;
@@ -164,5 +165,15 @@ public class OpsTest {
         for (var i = 0; i < 10; i++) {
             Ops.multiple(matrix1, matrix2);
         }
+    }
+
+    @Test
+    public void vectorMax() {
+        var r = new float[8];
+        var v = FloatVector.fromArray(FloatVector.SPECIES_MAX, new float[]{1, 2, 3, 4, 5, 6, 7, 8}, 0);
+        v.intoArray(r, 0);
+        assertArrayEquals(r, new float[]{1, 2, 3, 4, 5, 6, 7, 8}, 0.1f);
+        v.max(2).min(5).intoArray(r, 0);
+        assertArrayEquals(r, new float[]{2, 2, 3, 4, 5, 5, 5, 5}, 0.1f);
     }
 }

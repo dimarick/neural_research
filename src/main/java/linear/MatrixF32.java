@@ -60,4 +60,7 @@ public class MatrixF32 {
     public MatrixF32 transpose() {
         return new MatrixF32(this.columns, this.rows, data, !transposed);
     }
+    public VectorF32 asVector() {
+        return new VectorF32(data);
+    }
 }

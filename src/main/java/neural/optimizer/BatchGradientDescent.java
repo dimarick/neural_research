@@ -59,14 +59,12 @@ public class BatchGradientDescent implements Optimizer.BatchInterface {
     }
 
     protected void calculateGradients(Layer[] layers, MatrixF32[] layerResults) {
-        Arrays.stream(sgdData).skip(1).forEach(mem -> {
+        Arrays.stream(sgdData).skip(1).parallel().forEach(mem -> {
             var i = mem.i;
             var layer = layers[i];
             Ops.multipleBand(mem.error, new VectorF32(mem.diff.getData()), mem.gradient, 1.0f, 0.0f);
 
-            var layerLoss = layer.loss.apply(mem.gradient, new VectorF32(layerResults[i].getData()));
-            // fast gradient clipping
-            mem.loss = Math.signum(layerLoss) * Math.min(2, Math.abs(layerLoss));
+            mem.loss = layer.loss.apply(mem.gradient, new VectorF32(layerResults[i].getData()));
         });
     }
 
