@@ -1,4 +1,7 @@
-import neural.*;
+import neural.Activation;
+import neural.Dropout;
+import neural.Regularization;
+import neural.RumelhartPerceptron;
 import neural.optimizer.*;
 
 import java.io.DataInputStream;
@@ -13,12 +16,12 @@ import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Подбор дропаута ассоциативных слоев
+ * Тест лучшего результата
  */
-public class RumelhartTest4 {
+public class RumelhartTest5 {
 
-    private static final int EPOCHS = 100;
-    private static final float INITIAL_SPEED = 0.0035f;
+    private static final int EPOCHS = 2000;
+    private static final float INITIAL_SPEED = 0.0001f;
     public static final int BATCH_SIZE = 100;
 
     public static void main(String[] args) throws RuntimeException {
@@ -41,22 +44,39 @@ public class RumelhartTest4 {
 
             var result = trainImages.length;
 
-            for (var i = 0; i <= 6; i++) {
-                var speed = INITIAL_SPEED;
-                for (var j = 0; j <= 6; j++) {
-                    var a = 80 * Math.pow(2, i);
+            for (var i = 0; i <= 8; i++) {
+                for (var j = 0; j <= 0; j++) {
+                    var a = 40 * Math.pow(2, i);
                     var dropoutInput = 0.35f;
                     var random = new SecureRandom(new byte[]{3});
                     var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
-                    var dropoutA = 0.015f * j * (float)Math.pow(1.2, j + i);
+                    var dropoutA = switch ((int)a) {
+                        case 40 -> 0.01f;
+                        case 80 -> 0.01f;
+                        case 160 -> 0.05f;
+                        case 320 -> 0.05f;
+                        case 640 -> 0.05f;
+                        case 1280 -> 0.45f;
+                        case 2560 -> 0.55f;
+                        case 5120 -> 0.75f;
+                        default -> 0;
+                    };
+
+                    var speed = switch ((int)a) {
+                        case 40 -> 0.0008f;
+                        case 80 -> 0.0006f;
+                        case 160 -> 0.0005f;
+                        case 320 -> 0.0003f;
+                        case 640 -> 0.0002f;
+                        case 1280 -> 0.00015f;
+                        case 2560 -> 0.00004f;
+                        case 5120 -> 0.00001f;
+                        default -> 0.001f;
+                    };
 
                     var rAlgo = new Regularization.Ridge(1e-3f);
 
-//                    var p = new RumelhartPerceptron(random, new AdaDeltaBatch(0.999f))
-//                    var p = new RumelhartPerceptron(random, new RMSPropBatch(0.995f))
-//                    var p = new RumelhartPerceptron(random, new AdaGradBatch())
-//                    var p = new RumelhartPerceptron(random, new MomentumBatchGradientDescent(0.93f))
-                    var p = new RumelhartPerceptron(random, new NesterovBatchGradientDescent(0.7f))
+                    var p = new RumelhartPerceptron(random, new AdamBatch())
                             .addLayer(28 * 28)
                             .set(new Activation.LeakyReLU())
                             .set(dropoutInputAlgo)
@@ -87,10 +107,10 @@ public class RumelhartTest4 {
 
                     var trainRate = ((float)result / trainLabels.length) * 100;
 
-                    if (trainRate > 10 && speed > 0.005f * INITIAL_SPEED) {
-                        speed *= 0.7f;
-                        j--;
-                    }
+//                    if (trainRate > 10 && speed > 0.00005f * INITIAL_SPEED) {
+//                        speed *= 0.7f;
+//                        j--;
+//                    }
 
                     var testRate = (fail / testLabels.length) * 100;
                     System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + trainRate + "% " + ". Test Error rate is: " + testRate + "%");
@@ -124,10 +144,18 @@ public class RumelhartTest4 {
         var imagesBuffer = new float[imageSize * batchSize];
         var labelsBuffer = new float[10 * batchSize];
         var testRateAvg = -1f;
+        var speedScale = 1f;
+        var speedDecayTime = 80f;
+        var speedDecayStart = 0;
 
         for (var epoch = 0; epoch < EPOCHS; epoch++) {
             fail = 0;
             var epochStart = System.currentTimeMillis();
+            if ((epoch - speedDecayStart) > speedDecayTime) {
+                speedScale *= 0.5f;
+                speedDecayTime *= 0.7;
+                speedDecayStart = epoch;
+            }
 
             // Перемешивание образцов ускоряет сходимость сети
             Collections.shuffle(order);
@@ -141,7 +169,7 @@ public class RumelhartTest4 {
 
                 if (j >= batchSize) {
                     j = 0;
-                    var r = p.trainBatch(imagesBuffer, labelsBuffer, speed);
+                    var r = p.trainBatch(imagesBuffer, labelsBuffer, speed * speedScale);
                     for (var k = 0; k < batchSize; k++) {
                         if (getAnswer(Arrays.copyOfRange(r, k * 10, (k + 1) * 10)) != getAnswer(Arrays.copyOfRange(labelsBuffer, k * 10, (k + 1) * 10))) {
                             fail++;
@@ -161,9 +189,9 @@ public class RumelhartTest4 {
 
             testRateAvg = testRateAvg == -1 ? testRate * 0.5f : 0.1f * testRate + testRateAvg * 0.9f;
 
-            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + speed + ". Test error rate is: " + testRate * 100 + "%. (" + testRateAvg * 100 + "%). bias: " + bias);
+            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + speed * speedScale + ". Test error rate is: " + testRate * 100 + "%. (" + testRateAvg * 100 + "%). bias: " + bias);
 
-            if (fail == 0 || failRate > 0.6) {
+            if (fail == 0 || (failRate > 0.08 && epoch > 10) || speedScale < 1e-10) {
                 break;
             }
         }

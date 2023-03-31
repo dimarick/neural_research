@@ -1,6 +1,7 @@
 package neural;
 
 import linear.MatrixF32;
+import linear.VectorF32;
 
 import java.util.Random;
 
@@ -8,6 +9,7 @@ public final class Layer {
     public final RumelhartPerceptron parent;
     public final int size;
     public final MatrixF32 weights;
+    public final VectorF32 bias;
     public Activation.Interface activation;
     public Loss.Interface loss;
     public Regularization.Interface regularization;
@@ -17,6 +19,7 @@ public final class Layer {
     public Layer(RumelhartPerceptron parent, int size, MatrixF32 weights) {
         this.parent = parent;
         this.size = size;
+        this.bias = new VectorF32(new float[size]);
         this.weights = weights;
         this
                 .set(new Activation.Softmax())

@@ -80,7 +80,6 @@ public class RosenblattPerceptron {
 
         NeuralAlgo.deltaCorrection(
                 speed * NeuralAlgo.dropoutRate(dropoutFactor),
-                (r, t) -> NeuralAlgo.loss(r.getData(), t, LOSS_THRESHOLD),
                 resultMatrix,
                 target,
                 hiddenResultMatrix,

@@ -11,9 +11,8 @@ import java.util.zip.GZIPInputStream;
 
 public class RosenblattTest5 {
 
-    private static final int EPOCHS = 100;
-    private static final float SPEED_SCALE_UP = 1.15f;
-    private static final float INITIAL_SPEED = 0.3f;
+    private static final int EPOCHS = 300;
+    private static final float INITIAL_SPEED = 0.005f;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -37,7 +36,7 @@ public class RosenblattTest5 {
 
             for (var i = 0; i < 30; i++) {
                 var a = 125 * Math.pow(2, i);
-                var speed = INITIAL_SPEED / (float)Math.pow(1.4, i);
+                var speed = INITIAL_SPEED;
 
                 System.out.println("Starting test with speed " + speed + "(" + a + ")");
                 var p = new RosenblattPerceptron(28 * 28, 10, (int) (a), new SecureRandom(new byte[]{3}));
@@ -77,7 +76,10 @@ public class RosenblattTest5 {
         var bestEffectiveSpeed = 0.0f;
 
         var effectiveSpeedQueue = new ArrayList<>(Floats.asList(new float[8]));
-        var speedScale = SPEED_SCALE_UP;
+
+        var speedScale = 1f;
+        var speedDecayTime = 80f;
+        var speedDecayStart = 0;
 
         for (var epoch = 0; epoch < EPOCHS; epoch++) {
             fail = 0;
@@ -86,10 +88,16 @@ public class RosenblattTest5 {
             // Перемешивание образцов ускоряет сходимость сети
             Collections.shuffle(order);
 
+            if ((epoch - speedDecayStart) > speedDecayTime) {
+                speedScale *= 0.5f;
+                speedDecayTime *= 0.9;
+                speedDecayStart = epoch;
+            }
+
             for (var i : order) {
                 byte label = trainLabels[i];
                 var target = createTargetForLabel(label);
-                var r = p.trainLayer2(layer1[i], target, speed, dropout);
+                var r = p.trainLayer2(layer1[i], target, speed * speedScale, dropout);
                 if (getAnswer(r) != label) {
                     fail++;
                 }
@@ -112,7 +120,7 @@ public class RosenblattTest5 {
                 bestEffectiveSpeed = avgSpeed;
             }
 
-            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + speed + ". Test error rate is: " + testRate * 100 + "%. bias: " + bias + "%. dropout: " + dropout * 100 + "%. Effective speed: " + avgSpeed * 100);
+            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + speed * speedScale + ". Test error rate is: " + testRate * 100 + "%. bias: " + bias + "%. dropout: " + dropout * 100 + "%. Effective speed: " + avgSpeed * 100);
 
             // Идея автоматического выбора скорости базируется на двух экспериментально установленных фактах:
             // Эффективность обучения при выборе скорости больше оптимума снижается более резко, чем при
@@ -123,21 +131,8 @@ public class RosenblattTest5 {
             effectiveSpeedQueue.add(effectiveSpeed);
             effectiveSpeedQueue.remove(0);
 
-            var speed0 = effectiveSpeedQueue.subList(2, effectiveSpeedQueue.size() - 3).stream().mapToDouble(i -> (double)i).average().orElse(0.0);
-            var speed1 = effectiveSpeedQueue.subList(1, effectiveSpeedQueue.size() - 3).stream().mapToDouble(i -> (double)i).average().orElse(0.0);
-            var speed2 = effectiveSpeedQueue.subList(0, effectiveSpeedQueue.size() - 3).stream().mapToDouble(i -> (double)i).average().orElse(0.0);
-
             if (bias > 1.0) {
                 dropout = 1 - (1 - dropout) * 0.99f;
-            } else {
-                if (speed1 > speed0 && speed1 > speed2) {
-                    speed = speed / (float) Math.pow(speedScale, 5);
-                    speedScale = 1 + 0.9f * (speedScale - 1);
-                } else if (speed0 < 0 && speed1 < 0 && speed2 < 0) {
-                    speed = speed / (float) Math.pow(speedScale, 3);
-                } else {
-                    speed *= speedScale;
-                }
             }
 
             prevFail = fail;

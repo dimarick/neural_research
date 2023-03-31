@@ -52,7 +52,7 @@ public class Loss {
     }
 
     public static class HuberLoss implements Interface {
-        private float delta = 1.0f;
+        private float delta = 1f;
 
         public HuberLoss() {}
         public HuberLoss(float delta) {

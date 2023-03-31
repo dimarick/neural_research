@@ -5,6 +5,7 @@ import linear.Ops;
 import linear.VectorF32;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -103,8 +104,7 @@ public class RumelhartPerceptron {
             result = evalLayerBatch(result, layer);
         }
 
-        result = Ops.multiple(result, outputLayer.weights);
-        result = outputLayer.activation.applyBatch(result);
+        result = evalLayerBatch(result, outputLayer);
 
         return result.getData();
     }
@@ -142,7 +142,7 @@ public class RumelhartPerceptron {
 
         optimizer.apply(layers, layerResult, new VectorF32(target), speed);
 
-        if (new Random().nextFloat(0.0f, 1.0f) > 0.99f) {
+        if (new Random().nextFloat(0.0f, 1.0f) > 0.9f) {
             for (var i = hiddenLayers.size() - 1; i > 0; i--) {
                 hiddenLayers.get(i).regularization.apply(hiddenLayers.get(i).weights);
             }
@@ -178,9 +178,7 @@ public class RumelhartPerceptron {
             layerResult[i + 1] = layerInput;
             layers[i + 1] = layer;
         }
-
-        var result = Ops.multiple(layerInput, outputLayer.weights);
-        result = outputLayer.activation.applyBatch(result);
+        var result = evalLayerBatch(layerInput, outputLayer);
         outputLayer.dropoutIndexes = outputLayer.dropout.init(result.getSize());
         outputLayer.dropout.apply(result, outputLayer.dropoutIndexes);
 
@@ -189,7 +187,7 @@ public class RumelhartPerceptron {
 
         batchOptimizer.apply(layers, layerResult, new MatrixF32(layerInput.getRows(), outputLayer.size, target), speed);
 
-        if (new Random().nextFloat(0.0f, 1.0f) > 0.99f) {
+        if (new Random().nextFloat(0.0f, 1.0f) > 0.9f) {
             for (var i = hiddenLayers.size() - 1; i > 0; i--) {
                 hiddenLayers.get(i).regularization.apply(hiddenLayers.get(i).weights);
             }
@@ -208,7 +206,11 @@ public class RumelhartPerceptron {
     }
 
     private static MatrixF32 evalLayerBatch(MatrixF32 result, Layer layer) {
+        float[] oneMat = new float[result.getRows()];
+        Arrays.fill(oneMat, 1f);
+
         var r = Ops.multiple(result, layer.weights, 1.0f, 0.0f);
+        Ops.multiple(new VectorF32(oneMat), layer.bias, r, 1f, 1f);
 
         r = layer.activation.applyBatch(r);
 

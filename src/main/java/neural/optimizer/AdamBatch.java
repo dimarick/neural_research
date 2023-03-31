@@ -1,18 +1,24 @@
 package neural.optimizer;
 
 import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorSpecies;
 import linear.MatrixF32;
 import linear.Ops;
 import neural.Layer;
 
-/**
- * Примитивный адаптивный алгоритм: уменьшает скорость обновления часто обновляемых весов
- */
-public class AdaGradBatch extends BatchGradientDescent {
-    private record MomentumItem(MatrixF32 m, MatrixF32 g) {}
-    private MomentumItem[] momentumData;
+import java.util.Arrays;
 
-    public AdaGradBatch() {}
+/**
+ * Улучшение RMSProp: автоматическое управление скоростью
+ */
+public class AdamBatch extends BatchGradientDescent {
+    private record MomentumItem(MatrixF32 g, MatrixF32 m, MatrixF32 v, MatrixF32 d, float[] beta) {}
+    private MomentumItem[] momentumData;
+    private float beta1 = 0.9f;
+    private float beta2 = 0.999f;
+    private static final VectorSpecies<Float> species = FloatVector.SPECIES_MAX;
+
+    public AdamBatch() {}
 
     protected void updateLayerWeights(Layer[] layers, MatrixF32[] layerResults, float eta, SgdDataItem sgdItem) {
         var i = sgdItem.i;
@@ -34,24 +40,32 @@ public class AdaGradBatch extends BatchGradientDescent {
         float alpha1 = sgdItem.loss * layer.dropout.getRate();
 
         Ops.multiple(gradientMatrix, inputResult, momentum.g, alpha1, 0.0f);
-        Ops.multipleBand(momentum.g.asVector(), momentum.g.asVector(), momentum.m.asVector(), 1.0f, 1.0f);
+        Ops.multipleBand(momentum.g.asVector(), momentum.d.asVector(), momentum.m.asVector(), 1 - beta1, beta1);
+        Ops.multipleBand(momentum.g.asVector(), momentum.g.asVector(), momentum.v.asVector(), 1 - beta2, beta2);
 
-        var species = Ops.species;
-        var upperBound = species.loopBound(momentum.m.getSize());
+        var upperBound = species.loopBound(momentum.v.getSize());
         int length = species.length();
         var momentumData = momentum.m.getData();
+        var velocityData = momentum.v.getData();
         var gradientData = momentum.g.getData();
         var outputData = layer.weights.getData();
 
         for (var j = 0; j < upperBound; j += length) {
             var m = FloatVector.fromArray(species, momentumData, j);
+            var v = FloatVector.fromArray(species, velocityData, j);
             var g = FloatVector.fromArray(species, gradientData, j);
             var w = FloatVector.fromArray(species, outputData, j);
 
-            var o2 = g.div(m.add(1e-5f).sqrt()).min(2).max(-2).mul(-eta).add(w);
+            var o =
+                    m.div(1 - momentum.beta[0]).mul(-eta)
+                    .div(v.div(1 - momentum.beta[1]).sqrt().add(1e-10f))
+                    .add(w);
 
-            o2.intoArray(outputData, j);
+            o.intoArray(outputData, j);
         }
+
+        momentum.beta[0] *= beta1;
+        momentum.beta[1] *= beta2;
     }
 
     protected void initStaticMemory(Layer[] layers, int batchSize) {
@@ -62,7 +76,15 @@ public class AdaGradBatch extends BatchGradientDescent {
     protected void initLayerStaticMemory(int i, Layer layer, int batchSize) {
         var w = layer.weights;
         if (w != null) {
-            momentumData[i] = new MomentumItem(new MatrixF32(w.getRows(), w.getColumns(), new float[w.getData().length]), new MatrixF32(w.getRows(), w.getColumns(), new float[w.getData().length]));
+            float[] oneMatrix = new float[w.getData().length];
+            Arrays.fill(oneMatrix, 1f);
+            momentumData[i] = new MomentumItem(
+                    new MatrixF32(w.getRows(), w.getColumns(), new float[w.getData().length]),
+                    new MatrixF32(w.getRows(), w.getColumns(), new float[w.getData().length]),
+                    new MatrixF32(w.getRows(), w.getColumns(), new float[w.getData().length]),
+                    new MatrixF32(w.getRows(), w.getColumns(), oneMatrix),
+                    new float[]{beta1, beta2}
+            );
         }
         super.initLayerStaticMemory(i, layer, batchSize);
     }

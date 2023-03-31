@@ -1,6 +1,7 @@
 package neural;
 
 import linear.MatrixF32;
+import linear.Ops;
 import linear.VectorF32;
 
 import java.util.Arrays;
@@ -129,6 +130,7 @@ public class Activation {
     public static class Softmax implements Interface {
 
         final private float alpha;
+        private final float e = 1e-10f;
 
         public Softmax(float alpha) {
             this.alpha = alpha;
@@ -201,6 +203,96 @@ public class Activation {
 
                 for (var j = 0; j < matrix.getColumns(); j++) {
                     var exp = normalize((float) Math.exp(data[k + j] * alpha), Float.MAX_VALUE / matrix.getColumns());
+                    sum += exp;
+                    data[k + j] = exp;
+                }
+
+                sum = Math.max(Math.min(sum, Float.MAX_VALUE), -Float.MAX_VALUE);
+
+                for (var j = 0; j < matrix.getColumns(); j++) {
+                    data[k + j] /= sum + e;
+                    Ops.assertNoNan(new float[]{data[k + j]});
+                }
+            }
+
+            return matrix;
+        }
+
+        @Override
+        public MatrixF32 diffBatch(MatrixF32 matrix, MatrixF32 output) {
+            final var data = output.getData();
+            final var input = matrix.getData();
+
+            for (var i = 0; i < matrix.getRows(); i++) {
+                var sum = 0.0f;
+                var k = i * matrix.getColumns();
+
+                for (var j = 0; j < matrix.getColumns(); j++) {
+                    var exp = (float) Math.max(Math.min(Math.exp(input[k + j] * alpha), Float.MAX_VALUE / input.length / 2), -Float.MAX_VALUE / input.length / 2);
+                    sum += exp;
+                    data[k + j] = exp;
+                }
+
+                sum = Math.max(Math.min(sum, Float.MAX_VALUE), -Float.MAX_VALUE);
+
+                if (sum == 0.0f) {
+                    Arrays.fill(data, 0.0f);
+                }
+
+                for (var j = 0; j < data.length; j++) {
+                    data[j] = (input[j] / sum) * (1 - input[j] / sum);
+                }
+            }
+
+            return output;
+        }
+
+        @Override
+        public Loss.Interface suggestLoss() {
+            return new Loss.CrossEntropyLoss();
+        }
+
+        private static float normalize(float x, float max) {
+            return Math.max(Math.min(x, max), -max);
+        }
+    }
+
+
+    public static class SoftmaxStable implements Interface {
+
+        final private float alpha;
+        private final float e = 1e-10f;
+
+        public SoftmaxStable(float alpha) {
+            this.alpha = alpha;
+        }
+
+        public SoftmaxStable() {
+            this.alpha = 1.0f;
+        }
+
+        @Override
+        public VectorF32 apply(VectorF32 vector) {
+            throw new RuntimeException();
+        }
+
+        @Override
+        public VectorF32 diff(VectorF32 vector, VectorF32 output) {
+            throw new RuntimeException();
+        }
+
+        @Override
+        public MatrixF32 applyBatch(MatrixF32 matrix) {
+            final var data = matrix.getData();
+
+            for (var i = 0; i < matrix.getRows(); i++) {
+                var sum = 0.0f;
+                var k = i * matrix.getColumns();
+
+                var max = Ops.max(data, k, matrix.getColumns());
+
+                for (var j = 0; j < matrix.getColumns(); j++) {
+                    var exp = normalize((float) Math.exp((data[k + j] - max) * alpha), Float.MAX_VALUE / matrix.getColumns());
                     sum += exp;
                     data[k + j] = exp;
                 }

@@ -8,6 +8,14 @@ public class Ops {
 
     public static final VectorSpecies<Float> species = FloatVector.SPECIES_MAX;
 
+    public static void assertNoNan(float[] d) {
+//        for (var i : d) {
+//            if (Float.isNaN(i)) {
+//                throw new RuntimeException();
+//            }
+//        }
+    }
+
     public static VectorF32 multipleBand(VectorF32 vector1, VectorF32 vector2, VectorF32 result, float alpha, float beta) {
         getBlas().ssbmv("L",
                 vector1.getSize(),
@@ -150,10 +158,19 @@ public class Ops {
         return y;
     }
 
-    public static float max(float[] x) {
+    public static float amax(float[] x) {
         var i = getBlas().isamax(x.length, x, 1);
 
         return x[i];
+    }
+
+    public static float max(float[] x, int offset, int length) {
+        var r = -Float.MAX_VALUE;
+        for (var i = offset; i < offset + length; i++) {
+            r = Math.max(r, x[i]);
+        }
+
+        return r;
     }
 
     private static void multipleF32Blas(float[] resultData, MatrixF32 matrix1, MatrixF32 matrix2, float[] data1, float[] data2, float alpha, float beta) {

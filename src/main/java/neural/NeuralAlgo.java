@@ -131,15 +131,13 @@ public class NeuralAlgo {
         float eval(VectorF32 result, float[] target);
     }
 
-    public static void deltaCorrection(float alpha, LossFunction lossFunction, VectorF32 result, float[] target, VectorF32 prevLayerResult, MatrixF32 weights) {
-        var loss = lossFunction.eval(result, target);
-
+    public static void deltaCorrection(float alpha, VectorF32 result, float[] target, VectorF32 prevLayerResult, MatrixF32 weights) {
         var delta = new float[target.length];
 
         for (var i = 0; i < target.length; i++) {
-            delta[i] = alpha * loss * (target[i] - result.getData()[i]);
+            delta[i] = alpha * (target[i] - result.getData()[i]);
         }
 
-        Ops.multiple(new VectorF32(delta), prevLayerResult, weights, 1.0f, 1.0f).getData();
+        Ops.multiple(prevLayerResult, new VectorF32(delta), weights, 1.0f, 1.0f).getData();
     }
 }

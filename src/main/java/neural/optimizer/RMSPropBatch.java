@@ -43,7 +43,8 @@ public class RMSPropBatch extends BatchGradientDescent {
         float alpha1 = sgdItem.loss * layer.dropout.getRate();
 
         Ops.multiple(gradientMatrix, inputResult, momentum.g, alpha1, 0.0f);
-        Ops.multipleBand(momentum.g.asVector(), momentum.g.asVector(), momentum.m.asVector(), 1.0f, alpha);
+
+        Ops.multipleBand(momentum.g.asVector(), momentum.g.asVector(), momentum.m.asVector(), 1.0f - alpha, alpha);
 
         var upperBound = species.loopBound(momentum.m.getSize());
         int length = species.length();
@@ -71,7 +72,7 @@ public class RMSPropBatch extends BatchGradientDescent {
             var g = FloatVector.fromArray(species, gradientData, j);
             var w = FloatVector.fromArray(species, outputData, j);
 
-            var o2 = g.div(m.add(1e-5f).sqrt()).mul(-eta).add(w);
+            var o2 = g.div(m.add(1e-10f).sqrt()).mul(-eta).add(w);
 
             o2.intoArray(outputData, j);
         }

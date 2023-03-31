@@ -37,8 +37,24 @@ public class BatchGradientDescent implements Optimizer.BatchInterface {
         applyBackpropagation(layers, layerResults, target);
         calculateGradients(layers, layerResults);
         updateWeights(layers, layerResults, eta);
+        updateBias(layers, layerResults, eta);
 
         return calculateTotalLoss();
+    }
+    private void updateBias(Layer[] layers, MatrixF32[] layerResults, float eta) {
+        Arrays.stream(sgdData).skip(1).forEach(sgdItem -> updateLayerBias(layers, layerResults, eta, sgdItem));
+    }
+
+
+    private void updateLayerBias(Layer[] layers, MatrixF32[] layerResults, float eta, SgdDataItem sgdItem) {
+        var i = sgdItem.i;
+        var layer = layers[i];
+        MatrixF32 inputResult = layerResults[i - 1];
+        var batchSize = inputResult.getRows();
+        MatrixF32 gradientMatrix = new MatrixF32(batchSize, layer.size, sgdItem.gradient.getData());
+        float[] avgMatrix = new float[batchSize];
+        Arrays.fill(avgMatrix, 1f / batchSize);
+        Ops.multiple(new VectorF32(avgMatrix), gradientMatrix, layer.bias, -0.1f, 1.0f);
     }
 
     protected float calculateTotalLoss() {
@@ -63,8 +79,7 @@ public class BatchGradientDescent implements Optimizer.BatchInterface {
             var i = mem.i;
             var layer = layers[i];
             Ops.multipleBand(mem.error, new VectorF32(mem.diff.getData()), mem.gradient, 1.0f, 0.0f);
-
-            mem.loss = layer.loss.apply(mem.gradient, new VectorF32(layerResults[i].getData()));
+            mem.loss = 1f;
         });
     }
 
