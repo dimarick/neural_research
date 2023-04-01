@@ -4,4 +4,4 @@
 #export LD_PRELOAD=libnvblas.so
 #export NVBLAS_CONFIG_FILE=./nvblas.conf
 
-MAVEN_OPTS="-Xmx90g -Xms2g -XX:+UseSuperWord -XX:LoopMaxUnroll=64 -XX:LoopUnrollMin=16 -XX:+RangeCheckElimination -XX:+PartialPeelLoop -XX:ObjectAlignmentInBytes=32 --add-modules jdk.incubator.vector --enable-preview" taskset -c 0-11 mvn install compile exec:java -Dmaven.test.skip=true -Dexec.mainClass=RumelhartTest${1}
+MAVEN_OPTS="-Xmx90g -Xms2g -XX:+UseSuperWord -XX:LoopMaxUnroll=64 -XX:LoopUnrollMin=16 -XX:+RangeCheckElimination -XX:+PartialPeelLoop -XX:ObjectAlignmentInBytes=32 --add-modules jdk.incubator.vector --enable-preview" taskset -c 0-11 mvn install compile exec:java -Dmaven.test.skip=true -Dexec.mainClass=Test${1}

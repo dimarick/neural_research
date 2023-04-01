@@ -18,7 +18,7 @@ public class Dropout {
 
     public static class Zero implements Interface {
         final protected Random random;
-        final protected float k;
+        public float k;
 
         public Zero(Random random, float k) {
             this.random = random;
