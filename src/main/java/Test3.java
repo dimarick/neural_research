@@ -18,7 +18,7 @@ import java.util.Random;
 public class Test3 extends TestBase {
 
     private static final int EPOCHS = 2000;
-    public static final int BATCH_SIZE = 100;
+    public static final int BATCH_SIZE = 200;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -48,12 +48,12 @@ public class Test3 extends TestBase {
                     var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
 
                     var speed = switch ((int)a) {
-                        case 10 -> 0.0008f;
+                        case 10 -> 0.001f;
                         case 20 -> 0.0008f;
-                        case 40 -> 0.0008f;
-                        case 80 -> 0.0006f;
-                        case 160 -> 0.0005f;
-                        case 320 -> 0.0003f;
+                        case 40 -> 0.0006f;
+                        case 80 -> 0.0004f;
+                        case 160 -> 0.00025f;
+                        case 320 -> 0.0002f;
                         case 640 -> 0.0002f;
                         case 1280 -> 0.00015f;
                         case 2560 -> 0.00004f;
@@ -61,13 +61,13 @@ public class Test3 extends TestBase {
                         default -> 0.001f;
                     };
 
-                    var rAlgo = new Regularization.Ridge(1e-3f);
+                    var rAlgo = new Regularization.ElasticNet(1e-5f);
 
                     var dropout = new Dropout.Zero(new Random(random.nextLong()), 0);
                     var optimizer = switch (j) {
                         case 0 -> new BatchGradientDescent();
                         case 1 -> new MomentumBatchGradientDescent(0.95f);
-                        case 2 -> new NesterovBatchGradientDescent(0.7f);
+                        case 2 -> new NesterovBatchGradientDescent(0.8f);
                         case 3 -> new AdaGradBatch();
                         case 4 -> new RMSPropBatch(0.99f);
                         case 5 -> new AdaDeltaBatch(0.999f);
@@ -78,9 +78,9 @@ public class Test3 extends TestBase {
                         case 1 -> 2;
                         case 2 -> 3;
                         case 3 -> 100f;
-                        case 4 -> 5f;
-                        case 5 -> 1f;
-                        default -> 1;
+                        case 4 -> 4f;
+                        case 5 -> 0.5f;
+                        default -> 1f;
                     };
 
                     var p = new RumelhartPerceptron(random, optimizer)
@@ -155,6 +155,10 @@ public class Test3 extends TestBase {
         var bestTrainEpoch = 0;
 
         for (var epoch = 0; epoch < EPOCHS; epoch++) {
+            if (epoch == 20) {
+                speedScale *= 0.5f;
+            }
+
             fail = 0;
             var epochStart = System.currentTimeMillis();
             if ((epoch - speedDecayStart) > speedDecayTime) {
@@ -197,7 +201,7 @@ public class Test3 extends TestBase {
                 dropoutA.k = 1 - (1 - dropoutA.k) * 0.99f;
             }
 
-            testRateAvg = testRateAvg == -1 ? testRate * 0.5f : 0.1f * testRate + testRateAvg * 0.9f;
+            testRateAvg = testRateAvg == -1 ? testRate : 0.1f * testRate + testRateAvg * 0.9f;
 
             if (testRateAvg < bestTestRateAvg) {
                 bestTestRateAvg = testRateAvg;
@@ -207,11 +211,14 @@ public class Test3 extends TestBase {
             if (failRate < bestTrainRate) {
                 bestTrainEpoch = epoch;
                 bestTrainRate = failRate;
+            } else if ((epoch - speedDecayStart) > speedDecayTime * 0.3) {
+                speedScale *= 0.5f;
+                speedDecayStart = epoch;
             }
 
             System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + speed * speedScale + ". Test error rate is: " + testRate * 100 + "%. (" + testRateAvg * 100 + "%)");
 
-            if (fail == 0 || (testRateAvg - bestTestRateAvg > 0.03) || speedScale < 1e-10) {
+            if (fail == 0 || (testRateAvg - bestTestRateAvg > 0.03 && epoch > 20) || speedScale < 1e-10) {
                 break;
             }
         }
