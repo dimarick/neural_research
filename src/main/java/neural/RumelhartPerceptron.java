@@ -16,9 +16,10 @@ public class RumelhartPerceptron {
     final private ArrayList<Layer> hiddenLayers = new ArrayList<>();
     private Layer inputLayer;
     private Layer outputLayer;
-    final private Random random;
+    private final Random random;
     public Optimizer.Interface optimizer;
     public Optimizer.BatchInterface batchOptimizer;
+    private BackPropagation backPropagation = new BackPropagation();
 
     public RumelhartPerceptron(Random random, Optimizer.Interface optimizer) {
         this.random = random;
