@@ -178,7 +178,7 @@ public class Test4 extends TestBase {
 
                 if (j >= batchSize) {
                     j = 0;
-                    var r = p.trainBatch(imagesBuffer, labelsBuffer, speed * speedScale);
+                    var r = p.train(imagesBuffer, labelsBuffer, speed * speedScale);
                     for (var k = 0; k < batchSize; k++) {
                         if (getAnswer(Arrays.copyOfRange(r, k * 10, (k + 1) * 10)) != getAnswer(Arrays.copyOfRange(labelsBuffer, k * 10, (k + 1) * 10))) {
                             fail++;

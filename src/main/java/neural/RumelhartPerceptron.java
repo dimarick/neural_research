@@ -75,7 +75,7 @@ public class RumelhartPerceptron {
         }
     }
 
-    public float[] evalBatch(float[] sensorData) {
+    public float[] eval(float[] sensorData) {
         if ((sensorData.length % inputLayer.size) != 0) {
             throw new RuntimeException();
         }
@@ -83,15 +83,15 @@ public class RumelhartPerceptron {
         var result = new MatrixF32(sensorData.length / inputLayer.size, inputLayer.size, sensorData);
 
         for (var layer : hiddenLayers) {
-            result = evalLayerBatch(result, layer);
+            result = evalLayer(result, layer);
         }
 
-        result = evalLayerBatch(result, outputLayer);
+        result = evalLayer(result, outputLayer);
 
         return result.getData();
     }
 
-    public float[] trainBatch(float[] sensorData, float[] target, float eta) {
+    public float[] train(float[] sensorData, float[] target, float eta) {
         if ((sensorData.length % inputLayer.size) != 0) {
             throw new RuntimeException();
         }
@@ -110,14 +110,14 @@ public class RumelhartPerceptron {
         for (int i = 0; i < hiddenLayers.size(); i++) {
             Layer layer = hiddenLayers.get(i);
 
-            layerInput = evalLayerBatch(layerInput, layer);
+            layerInput = evalLayer(layerInput, layer);
             layer.dropoutIndexes = layer.dropout.init(layer.size);
             layer.dropout.apply(layerInput, layer.dropoutIndexes);
 
             layerResult[i + 1] = layerInput;
             layers[i + 1] = layer;
         }
-        var result = evalLayerBatch(layerInput, outputLayer);
+        var result = evalLayer(layerInput, outputLayer);
         outputLayer.dropoutIndexes = outputLayer.dropout.init(result.getSize());
         outputLayer.dropout.apply(result, outputLayer.dropoutIndexes);
 
@@ -136,7 +136,7 @@ public class RumelhartPerceptron {
         return result.getData();
     }
 
-    private static MatrixF32 evalLayerBatch(MatrixF32 result, Layer layer) {
+    private static MatrixF32 evalLayer(MatrixF32 result, Layer layer) {
         float[] oneMat = new float[result.getRows()];
         Arrays.fill(oneMat, 1f);
 

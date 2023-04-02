@@ -164,7 +164,7 @@ public class TestBase {
 
     protected static float testBatch(float[] testImages, byte[] testLabels, RumelhartPerceptron p) {
         var fail = 0.0f;
-        var results = p.evalBatch(testImages);
+        var results = p.eval(testImages);
 
         for (var i = 0; i < testLabels.length; i++) {
             byte label = testLabels[i];
