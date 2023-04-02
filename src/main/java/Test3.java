@@ -13,7 +13,7 @@ import java.util.LinkedList;
 import java.util.Random;
 
 /**
- * Тест лучшего результата с адаптивным dropout A
+ * Тест сходимости с разными алгоритмами оптимизации
  */
 public class Test3 extends TestBase {
 
@@ -65,14 +65,15 @@ public class Test3 extends TestBase {
 
                     var dropout = new Dropout.Zero(new Random(random.nextLong()), 0);
                     var optimizer = switch (j) {
-                        case 0 -> new BatchGradientDescent();
-                        case 1 -> new MomentumBatchGradientDescent(0.95f);
-                        case 2 -> new NesterovBatchGradientDescent(0.8f);
-                        case 3 -> new AdaGradBatch();
-                        case 4 -> new RMSPropBatch(0.99f);
-                        case 5 -> new AdaDeltaBatch(0.999f);
-                        default -> new AdamBatch();
+                        case 0 -> new SGD();
+                        case 1 -> new Momentum(0.95f);
+                        case 2 -> new Nesterov(0.8f);
+                        case 3 -> new AdaGrad();
+                        case 4 -> new RMSProp(0.99f);
+                        case 5 -> new AdaDelta(0.999f);
+                        default -> new Adam();
                     };
+
                     var speedOptimizerScale = switch (j) {
                         case 0 -> 2;
                         case 1 -> 2;
@@ -106,7 +107,7 @@ public class Test3 extends TestBase {
 
                     System.out.println("Starting test with speed " + speed * speedOptimizerScale + "(" + a + ", " + 1e-6f + "), volume " + p.volume() + ", dropout I: " + optimizer.getClass().getSimpleName() + ", dropout " + dropoutInput);
 
-                    result = train(testImages, testLabels, trainImages, trainLabels, speed * speedOptimizerScale, dropout, p);
+                    result = train(testImages, testLabels, trainImages, trainLabels, speed * speedOptimizerScale, p);
 
                     var testStart = System.currentTimeMillis();
 
@@ -125,7 +126,7 @@ public class Test3 extends TestBase {
         }
     }
 
-    private static int train(float[] testImages, byte[] testLabels, float[] trainImages, byte[] trainLabels, float speed, Dropout.Zero dropoutA, RumelhartPerceptron p) {
+    private static int train(float[] testImages, byte[] testLabels, float[] trainImages, byte[] trainLabels, float speed, RumelhartPerceptron p) {
         var order = new LinkedList<Integer>();
 
         int imageSize = p.inputSize();
@@ -195,25 +196,23 @@ public class Test3 extends TestBase {
             var epochTime = System.currentTimeMillis() - epochStart;
             float testRate = (testFail / testSize);
 
-            float bias = testRate * 100 - failRate * 100;
+            testRateAvg = testRateAvg == -1 ? 0.018f : 0.2f * testRate + testRateAvg * 0.8f;
 
-            if (bias > 1.0) {
-                dropoutA.k = 1 - (1 - dropoutA.k) * 0.99f;
-            }
-
-            testRateAvg = testRateAvg == -1 ? testRate : 0.1f * testRate + testRateAvg * 0.9f;
-
-            if (testRateAvg < bestTestRateAvg) {
-                bestTestRateAvg = testRateAvg;
-                bestEpoch = epoch;
+            if (epoch > 10) {
+                if (testRateAvg < bestTestRateAvg) {
+                    bestTestRateAvg = testRateAvg;
+                    bestEpoch = epoch;
+                }
+            } else {
+                if (testRate < bestTestRateAvg) {
+                    bestTestRateAvg = testRate;
+                    bestEpoch = epoch;
+                }
             }
 
             if (failRate < bestTrainRate) {
                 bestTrainEpoch = epoch;
                 bestTrainRate = failRate;
-            } else if ((epoch - speedDecayStart) > speedDecayTime * 0.3) {
-                speedScale *= 0.5f;
-                speedDecayStart = epoch;
             }
 
             System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + speed * speedScale + ". Test error rate is: " + testRate * 100 + "%. (" + testRateAvg * 100 + "%)");

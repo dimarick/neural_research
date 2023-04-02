@@ -5,14 +5,14 @@ import linear.Ops;
 import linear.VectorF32;
 import neural.Optimizer;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 
-public class AdaGrad implements Optimizer.Interface2 {
-    private final ArrayList<VectorF32> gData = new ArrayList<>();
+public class AdaGrad implements Optimizer.Interface {
+    private final HashMap<Integer, VectorF32> gData = new HashMap<>();
 
     public void apply(int layer, VectorF32 weights, VectorF32 gradient, float eta) {
         if (gData.get(layer) == null || gData.get(layer).getSize() != gradient.getSize()) {
-            gData.set(layer, new VectorF32(gradient.getSize()));
+            gData.put(layer, new VectorF32(gradient.getSize()));
         }
 
         var gDataItem = gData.get(layer).getData();
@@ -30,11 +30,11 @@ public class AdaGrad implements Optimizer.Interface2 {
             var g = FloatVector.fromArray(species, gradientData, j);
             var w = FloatVector.fromArray(species, outputData, j);
 
+            G = g.mul(g).add(G);
             var o = g.div(G.add(1e-12f).sqrt()).mul(-eta).add(w);
-            var o2 = g.mul(g);
 
             o.intoArray(outputData, j);
-            o2.intoArray(gDataItem, j);
+            G.intoArray(gDataItem, j);
         }
     }
 }

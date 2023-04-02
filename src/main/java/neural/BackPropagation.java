@@ -27,7 +27,7 @@ final public class BackPropagation {
 
     private BpDataItem[] data;
 
-    public float apply(Optimizer.Interface2 optimizer, Layer[] layers, MatrixF32[] layerResults, MatrixF32 target, float eta) {
+    public float apply(Optimizer.Interface optimizer, Layer[] layers, MatrixF32[] layerResults, MatrixF32 target, float eta) {
         if (data == null || (data[0].diff.getRows() != layerResults[0].getRows())) {
             initStaticMemory(layers, layerResults[0].getRows());
         }
@@ -58,17 +58,17 @@ final public class BackPropagation {
         return (float) Arrays.stream(data).mapToDouble(m -> (double) layers[m.i].loss.apply(m.inputGradient, new VectorF32(layerResults[m.i].getData()))).sum();
     }
 
-    private void updateWeights(Optimizer.Interface2 optimizer, Layer[] layers, MatrixF32[] layerResults, float eta) {
+    private void updateWeights(Optimizer.Interface optimizer, Layer[] layers, MatrixF32[] layerResults, float eta) {
         Arrays.stream(data).skip(1).forEach(bpItem -> updateLayerWeights(optimizer, layers, layerResults, eta, bpItem));
     }
 
-    private void updateLayerWeights(Optimizer.Interface2 optimizer, Layer[] layers, MatrixF32[] layerResults, float eta, BpDataItem bpItem) {
+    private void updateLayerWeights(Optimizer.Interface optimizer, Layer[] layers, MatrixF32[] layerResults, float eta, BpDataItem bpItem) {
         var i = bpItem.i;
         var layer = layers[i];
         MatrixF32 inputResult = layerResults[i - 1];
         var batchSize = inputResult.getRows();
         MatrixF32 gradientMatrix = new MatrixF32(batchSize, layer.size, bpItem.inputGradient.getData()).transpose();
-        Ops.multiple(gradientMatrix, inputResult, bpItem.weightsGradient, 1.0f, 1.0f);
+        Ops.multiple(gradientMatrix, inputResult, bpItem.weightsGradient, 1.0f, 0.0f);
         optimizer.apply(i, layer.weights.asVector(), bpItem.weightsGradient.asVector(), eta * layer.dropout.getRate());
     }
 
@@ -118,7 +118,7 @@ final public class BackPropagation {
             new VectorF32(err),
             new MatrixF32(batchSize, layer.size, err),
             new VectorF32(new float[size]),
-            new MatrixF32(layer.weights.getRows(), layer.weights.getColumns()),
+            layer.weights != null ? new MatrixF32(layer.weights.getRows(), layer.weights.getColumns()) : null,
             0
         );
     }

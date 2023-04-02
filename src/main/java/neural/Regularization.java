@@ -6,7 +6,7 @@ import linear.Ops;
 
 public class Regularization {
     public interface Interface {
-        void apply(MatrixF32 weights);
+        void apply(MatrixF32 weights, float eta);
     }
 
     public static class Lasso implements Interface {
@@ -18,11 +18,11 @@ public class Regularization {
             this.generalizationFactor = generalizationFactor;
         }
 
-        public void apply(MatrixF32 weights) {
+        public void apply(MatrixF32 weights, float eta) {
             float[] data = weights.getData();
 
             var l = BLAS.getInstance().sasum(data.length, data, 1) / data.length * generalizationFactor;
-            generalizationApply(l, weights);
+            generalizationApply(l * eta, weights);
         }
     }
 
@@ -35,7 +35,7 @@ public class Regularization {
             this.generalizationFactor = generalizationFactor;
         }
 
-        public void apply(MatrixF32 weights) {
+        public void apply(MatrixF32 weights, float eta) {
             float[] data = weights.getData();
 
             var l = Ops.multiple(
@@ -43,7 +43,7 @@ public class Regularization {
                     new MatrixF32(data.length, 1, data), 1.0f / data.length * generalizationFactor, 0
             ).getData()[0];
 
-            generalizationApply(l, weights);
+            generalizationApply(l * eta, weights);
         }
     }
 
@@ -56,7 +56,7 @@ public class Regularization {
             this.generalizationFactor = generalizationFactor;
         }
 
-        public void apply(MatrixF32 weights) {
+        public void apply(MatrixF32 weights, float eta) {
             var result = 0.0f;
 
             for (float item : weights.getData()) {
@@ -65,7 +65,7 @@ public class Regularization {
             }
 
             var l = result / weights.getData().length * generalizationFactor;
-            generalizationApply(l, weights);
+            generalizationApply(l * eta, weights);
         }
     }
 

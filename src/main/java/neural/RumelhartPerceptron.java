@@ -17,18 +17,12 @@ public class RumelhartPerceptron {
     private Layer inputLayer;
     private Layer outputLayer;
     private final Random random;
-    public Optimizer.Interface optimizer;
-    public Optimizer.BatchInterface batchOptimizer;
-    private BackPropagation backPropagation = new BackPropagation();
+    private final Optimizer.Interface optimizer;
+    private final BackPropagation backPropagation = new BackPropagation();
 
     public RumelhartPerceptron(Random random, Optimizer.Interface optimizer) {
         this.random = random;
         this.optimizer = optimizer;
-    }
-
-    public RumelhartPerceptron(Random random, Optimizer.BatchInterface batchOptimizer) {
-        this.random = random;
-        this.batchOptimizer = batchOptimizer;
     }
 
     public int volume() {
@@ -81,19 +75,6 @@ public class RumelhartPerceptron {
         }
     }
 
-    public float[] eval(float[] sensorData) {
-        var result = new VectorF32(sensorData);
-
-        for (var layer : hiddenLayers) {
-            result = evalLayer(result, layer);
-        }
-
-        result = Ops.multiple(result, outputLayer.weights);
-        result = outputLayer.activation.apply(result);
-
-        return result.getData();
-    }
-
     public float[] evalBatch(float[] sensorData) {
         if ((sensorData.length % inputLayer.size) != 0) {
             throw new RuntimeException();
@@ -110,50 +91,7 @@ public class RumelhartPerceptron {
         return result.getData();
     }
 
-    public float[] train(float[] sensorData, float[] target, float speed) {
-        var layerInput = new VectorF32(sensorData.clone());
-
-        inputLayer.dropoutIndexes = inputLayer.dropout.init(layerInput.getSize());
-        inputLayer.dropout.apply(layerInput, inputLayer.dropoutIndexes);
-
-        var layerResult = new VectorF32[hiddenLayers.size() + 2];
-        var layers = new Layer[hiddenLayers.size() + 2];
-
-        layerResult[0] = new VectorF32(sensorData);
-        layers[0] = inputLayer;
-
-        for (int i = 0; i < hiddenLayers.size(); i++) {
-            Layer layer = hiddenLayers.get(i);
-
-            layerInput = evalLayer(layerInput, layer);
-            layer.dropoutIndexes = layer.dropout.init(layer.size);
-            layer.dropout.apply(layerInput, layer.dropoutIndexes);
-
-            layerResult[i + 1] = layerInput;
-            layers[i + 1] = layer;
-        }
-
-        var result = Ops.multiple(layerInput, outputLayer.weights);
-        result = outputLayer.activation.apply(result);
-        outputLayer.dropoutIndexes = outputLayer.dropout.init(result.getSize());
-        outputLayer.dropout.apply(result, outputLayer.dropoutIndexes);
-
-        layerResult[hiddenLayers.size() + 1] = result;
-        layers[hiddenLayers.size() + 1] = outputLayer;
-
-        optimizer.apply(layers, layerResult, new VectorF32(target), speed);
-
-        if (new Random().nextFloat(0.0f, 1.0f) > 0.9f) {
-            for (var i = hiddenLayers.size() - 1; i > 0; i--) {
-                hiddenLayers.get(i).regularization.apply(hiddenLayers.get(i).weights);
-            }
-            outputLayer.regularization.apply(outputLayer.weights);
-        }
-
-        return result.getData();
-    }
-
-    public float[] trainBatch(float[] sensorData, float[] target, float speed) {
+    public float[] trainBatch(float[] sensorData, float[] target, float eta) {
         if ((sensorData.length % inputLayer.size) != 0) {
             throw new RuntimeException();
         }
@@ -186,24 +124,16 @@ public class RumelhartPerceptron {
         layerResult[hiddenLayers.size() + 1] = result;
         layers[hiddenLayers.size() + 1] = outputLayer;
 
-        batchOptimizer.apply(layers, layerResult, new MatrixF32(layerInput.getRows(), outputLayer.size, target), speed);
+        backPropagation.apply(optimizer, layers, layerResult, new MatrixF32(layerInput.getRows(), outputLayer.size, target), eta);
 
         if (new Random().nextFloat(0.0f, 1.0f) > 0.9f) {
             for (var i = hiddenLayers.size() - 1; i > 0; i--) {
-                hiddenLayers.get(i).regularization.apply(hiddenLayers.get(i).weights);
+                hiddenLayers.get(i).regularization.apply(hiddenLayers.get(i).weights, eta);
             }
-            outputLayer.regularization.apply(outputLayer.weights);
+            outputLayer.regularization.apply(outputLayer.weights, eta);
         }
 
         return result.getData();
-    }
-
-    private static VectorF32 evalLayer(VectorF32 result, Layer layer) {
-        var r = Ops.multiple(result, layer.weights, 1.0f, 0.0f);
-
-        r = layer.activation.apply(r);
-
-        return r;
     }
 
     private static MatrixF32 evalLayerBatch(MatrixF32 result, Layer layer) {
