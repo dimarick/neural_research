@@ -4,6 +4,7 @@ import linear.MatrixF32;
 import linear.Ops;
 import linear.VectorF32;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -11,7 +12,7 @@ import java.util.Random;
 /**
  * Реализация многослойного перцептрона с обратным распространением ошибки
  */
-public class RumelhartPerceptron {
+public class FeedForwardNeuralNetwork {
 
     final private ArrayList<Layer> hiddenLayers = new ArrayList<>();
     private Layer inputLayer;
@@ -20,7 +21,7 @@ public class RumelhartPerceptron {
     private final Optimizer.Interface optimizer;
     private final BackPropagation backPropagation = new BackPropagation();
 
-    public RumelhartPerceptron(Random random, Optimizer.Interface optimizer) {
+    public FeedForwardNeuralNetwork(Random random, Optimizer.Interface optimizer) {
         this.random = random;
         this.optimizer = optimizer;
     }
@@ -33,6 +34,58 @@ public class RumelhartPerceptron {
         }
 
         return v + outputLayer.weights.getData().length;
+    }
+
+    public void dumpLayersStat(PrintStream out) {
+        for (var layer : hiddenLayers) {
+            dumpLayerStat(out, layer);
+        }
+
+        dumpLayerStat(out, outputLayer);
+    }
+
+    private void dumpLayerStat(PrintStream out, Layer layer) {
+        out.println("Layer " + layer.size);
+        if (layer.weights != null) {
+            var min = Float.POSITIVE_INFINITY;
+            var max = Float.NEGATIVE_INFINITY;
+            var mean = 0f;
+            var disp = 0f;
+            var histogram = new int[10];
+            var histogramLegend = new double[10];
+
+            for (var w : layer.weights.getData()) {
+                min = Math.min(min, w);
+                max = Math.max(max, w);
+                mean += w / (double)layer.weights.getSize();
+                disp += w * w;
+            }
+
+            var histStep = (max - min) / histogram.length;
+
+            for (var w : layer.weights.getData()) {
+                var v = Math.min(histogram.length - 1, (int)Math.floor((w - min) / histStep));
+                histogram[v]++;
+                histogramLegend[v] = histStep * v + min;
+            }
+
+            out.println("\t w: k=" + layer.weights.getSize() + "\tmin: " + min + "\t max: " + max + "\tmean: " + mean + "\tstddev: " + Math.sqrt(disp));
+
+            out.print("\t");
+
+            for (var i = 0; i < histogram.length; i++) {
+                out.print("\t" + (double)Math.round(histogramLegend[i] * 1000) / 1000);
+            }
+
+            out.println();
+            out.print("\t");
+
+            for (var i = 0; i < histogram.length; i++) {
+                out.print("\t" + histogram[i]);
+            }
+
+            out.println();
+        }
     }
 
     public int inputSize() {
@@ -71,7 +124,8 @@ public class RumelhartPerceptron {
 
     private void generateWeights(float[] layer, Random random, int size) {
         for (var i = 0; i < layer.length; i++) {
-            layer[i] = (float)random.nextGaussian(0.0f, 1f / Math.sqrt(size));
+//            layer[i] = random.nextFloat(-0.5f / (size * size), 0.5f / (float)(size * size));
+            layer[i] = (float)random.nextGaussian(0.0f, 1f / size);
         }
     }
 
@@ -137,11 +191,11 @@ public class RumelhartPerceptron {
     }
 
     private static MatrixF32 evalLayer(MatrixF32 result, Layer layer) {
-        float[] oneMat = new float[result.getRows()];
-        Arrays.fill(oneMat, 1f);
+        float[] I = new float[result.getRows()];
+        Arrays.fill(I, 1f);
 
-        var r = Ops.multiple(result, layer.weights, 1.0f, 0.0f);
-        Ops.multiple(new VectorF32(oneMat), layer.bias, r, 1f, 1f);
+        var r = Ops.product(result, layer.weights, 1.0f, 0.0f);
+        Ops.product(new VectorF32(I), layer.bias, r, 1f, 1f);
 
         r = layer.activation.applyBatch(r);
 

@@ -6,7 +6,7 @@ import linear.VectorF32;
 import java.util.Random;
 
 public final class Layer {
-    public final RumelhartPerceptron parent;
+    public final FeedForwardNeuralNetwork parent;
     public final int size;
     public final MatrixF32 weights;
     public final VectorF32 bias;
@@ -14,9 +14,10 @@ public final class Layer {
     public Loss.Interface loss;
     public Regularization.Interface regularization;
     public Dropout.Interface dropout;
+    public float lr = 1f;
     public int[] dropoutIndexes;
 
-    public Layer(RumelhartPerceptron parent, int size, MatrixF32 weights) {
+    public Layer(FeedForwardNeuralNetwork parent, int size, MatrixF32 weights) {
         this.parent = parent;
         this.size = size;
         this.bias = new VectorF32(new float[size]);
@@ -27,7 +28,7 @@ public final class Layer {
                 .set(new Dropout.Zero(new Random(), 0));
     }
 
-    public RumelhartPerceptron parent() {
+    public FeedForwardNeuralNetwork parent() {
         return parent;
     }
 
@@ -52,6 +53,12 @@ public final class Layer {
 
     public Layer set(Dropout.Interface dropout) {
         this.dropout = dropout;
+
+        return this;
+    }
+
+    public Layer setLr(float lr) {
+        this.lr = lr;
 
         return this;
     }

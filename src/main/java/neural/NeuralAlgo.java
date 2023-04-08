@@ -55,22 +55,6 @@ public class NeuralAlgo {
         }
     }
 
-    public static float loss(float[] result, float[] target, float threshold) {
-        var a = getAnswer(target);
-
-        var loss = 0.0f;
-
-        for (var i = 0; i < result.length; i++) {
-            if (a == i) {
-                continue;
-            }
-
-            loss += Math.abs(Math.max(0, result[i] - result[a] + threshold));
-        }
-
-        return loss / result.length;
-    }
-
     public static void dropout(Random random, float[] result, float k) {
         int[] ints = readIntsFromRandomPool(random, - (int)(result.length * Math.log(1 - k)), 0, result.length);
         for (var i : ints) {
@@ -126,11 +110,6 @@ public class NeuralAlgo {
         }
     }
 
-
-    public interface LossFunction {
-        float eval(VectorF32 result, float[] target);
-    }
-
     public static void deltaCorrection(float alpha, VectorF32 result, float[] target, VectorF32 prevLayerResult, MatrixF32 weights) {
         var delta = new float[target.length];
 
@@ -138,6 +117,6 @@ public class NeuralAlgo {
             delta[i] = alpha * (target[i] - result.getData()[i]);
         }
 
-        Ops.multiple(prevLayerResult, new VectorF32(delta), weights, 1.0f, 1.0f).getData();
+        Ops.product(prevLayerResult, new VectorF32(delta), weights, 1.0f, 1.0f).getData();
     }
 }

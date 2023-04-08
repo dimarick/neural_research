@@ -1,7 +1,7 @@
 import neural.Activation;
 import neural.Dropout;
 import neural.Regularization;
-import neural.RumelhartPerceptron;
+import neural.FeedForwardNeuralNetwork;
 import neural.optimizer.*;
 
 import java.io.FileInputStream;
@@ -84,7 +84,7 @@ public class Test3 extends TestBase {
                         default -> 1f;
                     };
 
-                    var p = new RumelhartPerceptron(random, optimizer)
+                    var p = new FeedForwardNeuralNetwork(random, optimizer)
                             .addLayer(28 * 28)
                             .set(new Activation.LeakyReLU())
                             .set(dropoutInputAlgo)
@@ -126,7 +126,7 @@ public class Test3 extends TestBase {
         }
     }
 
-    private static int train(float[] testImages, byte[] testLabels, float[] trainImages, byte[] trainLabels, float speed, RumelhartPerceptron p) {
+    private static int train(float[] testImages, byte[] testLabels, float[] trainImages, byte[] trainLabels, float speed, FeedForwardNeuralNetwork p) {
         var order = new LinkedList<Integer>();
 
         int imageSize = p.inputSize();

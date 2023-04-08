@@ -19,7 +19,7 @@ public class OpsTest {
     public void multipleTest() {
         assertArrayEquals(
                 new float[]{21.0f,26.0f,31.0f,36.0f,27.0f,34.0f,41.0f,48.0f,33.0f,42.0f,51.0f,60.0f},
-                Ops.multiple(
+                Ops.product(
                         new MatrixF32(3, 2, new float[]{1.0f, 4.0f, 2.0f, 5.0f, 3.0f, 6.0f}),
                         new MatrixF32(2, 4, new float[]{1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f})
                 ).getData(),
@@ -119,7 +119,7 @@ public class OpsTest {
         Arrays.fill(data1, 1.0f);
         Arrays.fill(data2, 1.0f);
 
-        float[] result = Ops.multiple(
+        float[] result = Ops.product(
                 new MatrixF32(4000, 100000, data1),
                 new MatrixF32(100000, 4000, data2)
         ).getData();
@@ -142,7 +142,7 @@ public class OpsTest {
         float[] result = new float[0];
 
         for (var i = 0; i < 200; i++) {
-            result = Ops.multiple(
+            result = Ops.product(
                     new MatrixF32(40000, 10000, data1),
                     new MatrixF32(10000, 1, data2)
             ).getData();
@@ -163,7 +163,7 @@ public class OpsTest {
         MatrixF32 matrix2 = new MatrixF32(1000, 2000, new float[2000000]);
 
         for (var i = 0; i < 10; i++) {
-            Ops.multiple(matrix1, matrix2);
+            Ops.product(matrix1, matrix2);
         }
     }
 

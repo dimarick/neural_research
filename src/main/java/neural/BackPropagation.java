@@ -35,27 +35,28 @@ final public class BackPropagation {
         applyBackpropagation(layers, layerResults, target);
         calculateGradients();
         updateWeights(optimizer, layers, layerResults, eta);
-        updateBias(layers, layerResults);
+        updateBias(layers, layerResults, eta);
 
         return calculateTotalLoss(layers, layerResults);
     }
-    private void updateBias(Layer[] layers, MatrixF32[] layerResults) {
-        Arrays.stream(data).skip(1).forEach(bpItem -> updateLayerBias(layers, layerResults, bpItem));
+    private void updateBias(Layer[] layers, MatrixF32[] layerResults, float eta) {
+        Arrays.stream(data).skip(1).forEach(bpItem -> updateLayerBias(layers, layerResults, bpItem, eta));
     }
 
-    private void updateLayerBias(Layer[] layers, MatrixF32[] layerResults, BpDataItem bpItem) {
+    private void updateLayerBias(Layer[] layers, MatrixF32[] layerResults, BpDataItem bpItem, float eta) {
         var i = bpItem.i;
         var layer = layers[i];
         MatrixF32 inputResult = layerResults[i - 1];
         var batchSize = inputResult.getRows();
         MatrixF32 gradientMatrix = new MatrixF32(batchSize, layer.size, bpItem.inputGradient.getData());
         float[] avgMatrix = new float[batchSize];
-        Arrays.fill(avgMatrix, 1f / batchSize);
-        Ops.multiple(new VectorF32(avgMatrix), gradientMatrix, layer.bias, -0.1f, 1.0f);
+        Arrays.fill(avgMatrix, 1f);
+        Ops.product(new VectorF32(avgMatrix), gradientMatrix, layer.bias, -eta * layer.lr, 1.0f);
     }
 
     private float calculateTotalLoss(Layer[] layers, MatrixF32[] layerResults) {
-        return (float) Arrays.stream(data).mapToDouble(m -> (double) layers[m.i].loss.apply(m.inputGradient, new VectorF32(layerResults[m.i].getData()))).sum();
+        var m = data[layerResults.length - 1];
+        return layers[m.i].loss.apply(m.inputGradient, new VectorF32(layerResults[m.i].getData()));
     }
 
     private void updateWeights(Optimizer.Interface optimizer, Layer[] layers, MatrixF32[] layerResults, float eta) {
@@ -68,13 +69,27 @@ final public class BackPropagation {
         MatrixF32 inputResult = layerResults[i - 1];
         var batchSize = inputResult.getRows();
         MatrixF32 gradientMatrix = new MatrixF32(batchSize, layer.size, bpItem.inputGradient.getData()).transpose();
-        Ops.multiple(gradientMatrix, inputResult, bpItem.weightsGradient, 1.0f, 0.0f);
-        optimizer.apply(i, layer.weights.asVector(), bpItem.weightsGradient.asVector(), eta * layer.dropout.getRate());
+        Ops.product(gradientMatrix, inputResult, bpItem.weightsGradient, 1.0f, 0.0f);
+
+        var norm = 0.0f;
+        for (float v : bpItem.weightsGradient.getData()) {
+            norm += v * v;
+        }
+
+        norm = (float)Math.sqrt(norm);
+
+        float normMax = 100f;
+        if (norm > normMax) {
+            Ops.product(bpItem.weightsGradient, normMax / norm);
+        }
+
+
+        optimizer.apply(i, layer.weights.asVector(), bpItem.weightsGradient.asVector(), eta * layer.dropout.getRate() * layer.lr);
     }
 
     private void calculateGradients() {
         Arrays.stream(data).skip(1).parallel().forEach(mem -> {
-            Ops.multipleBand(mem.error, new VectorF32(mem.diff.getData()), mem.inputGradient, 1.0f, 0.0f);
+            Ops.multipleElements(mem.error, new VectorF32(mem.diff.getData()), mem.inputGradient, 1.0f, 0.0f);
         });
     }
 
@@ -99,7 +114,7 @@ final public class BackPropagation {
             mem.i = i;
             layer.activation.diffBatch(layerResults[i], mem.diff);
             layer.dropout.apply(mem.diff, layer.dropoutIndexes);
-            Ops.multiple(data[i + 1].errorMatrix, layers[i + 1].weights.transpose(), mem.errorMatrix, 1.0f, 0.0f).getData();
+            Ops.product(data[i + 1].errorMatrix, layers[i + 1].weights.transpose(), mem.errorMatrix, 1.0f, 0.0f).getData();
         }
     }
 

@@ -25,7 +25,7 @@ public class SingleLayerPerceptron {
 
     public float[] eval(float[] sensorData) {
         var sensor = new MatrixF32(sensorData.length, 1, sensorData);
-        var result = Ops.multiple(this.weights, sensor).getData();
+        var result = Ops.product(this.weights, sensor).getData();
 
         for (var i = 0; i < result.length; i++) {
             result[i] = activation(result[i]);
@@ -48,7 +48,7 @@ public class SingleLayerPerceptron {
 
     public void train(float[] sensorData, float[] target, float speed) {
         var sensor = new MatrixF32(sensorData.length, 1, sensorData);
-        var result = Ops.multiple(this.weights, sensor).getData();
+        var result = Ops.product(this.weights, sensor).getData();
 
         for (var i = 0; i < result.length; i++) {
             result[i] = activation(result[i]);

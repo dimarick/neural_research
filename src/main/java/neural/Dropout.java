@@ -83,8 +83,8 @@ public class Dropout {
         }
     }
 
-    final private static int[] randomPool = new int[1048576];
-    private static int randomPoolCursor = randomPool.length;
+    final private static int[] randomPool = new int[1048576 * 1024];
+    private static int randomPoolCursor = -1;
 
     private static void parallel(BiConsumer<Integer, Integer> task) {
         int cores = Runtime.getRuntime().availableProcessors();
@@ -95,10 +95,15 @@ public class Dropout {
         enshurePoolFullfilled(random, n);
 
         var scale = (double)((long)Integer.MAX_VALUE - (long)Integer.MIN_VALUE);
+        var result = new int[n];
+        int range = max - min;
 
-        return Arrays.stream(Arrays
-                        .copyOfRange(randomPool, randomPoolCursor - n, randomPoolCursor))
-                .map(d -> (int)((d / scale + 0.5) * (max - min) + min)).toArray();
+        for (var i = 0; i < n; i++) {
+            var d = randomPool[i + randomPoolCursor - n];
+            result[i] = (int)((d / scale + 0.5) * range + min);
+        }
+
+        return result;
     }
 
     private static int[] readIntsFromRandomPool(Random random, int n) {
@@ -108,21 +113,29 @@ public class Dropout {
     }
 
     private static void enshurePoolFullfilled(Random random, int n) {
-        if (randomPoolCursor + n >= randomPool.length) {
-            parallel((t, cores) -> {
-                var r = new Random(random.nextInt());
-                var batch = Math.ceil((double) randomPool.length / cores);
-                var start = (int)(t * batch);
-                var end = (int)Math.min(randomPool.length, start + batch);
+        if (randomPoolCursor == -1) {
+            fulfillPool(random);
 
-                for (var i = start; i < end; i++) {
-                    randomPool[i] = r.nextInt();
-                }
-            });
+            randomPoolCursor = 0;
+        }
+        if (randomPoolCursor + n >= randomPool.length) {
 
             randomPoolCursor = 0;
         }
 
         randomPoolCursor += n;
+    }
+
+    private static void fulfillPool(Random random) {
+        parallel((t, cores) -> {
+            var r = new Random(random.nextInt());
+            var batch = Math.ceil((double) randomPool.length / cores);
+            var start = (int)(t * batch);
+            var end = (int)Math.min(randomPool.length, start + batch);
+
+            for (var i = start; i < end; i++) {
+                randomPool[i] = r.nextInt();
+            }
+        });
     }
 }

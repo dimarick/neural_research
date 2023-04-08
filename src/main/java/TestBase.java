@@ -1,4 +1,4 @@
-import neural.RumelhartPerceptron;
+import neural.FeedForwardNeuralNetwork;
 
 import java.io.*;
 import java.util.Arrays;
@@ -162,7 +162,7 @@ public class TestBase {
         return fail;
     }
 
-    protected static float testBatch(float[] testImages, byte[] testLabels, RumelhartPerceptron p) {
+    protected static float testBatch(float[] testImages, byte[] testLabels, FeedForwardNeuralNetwork p) {
         var fail = 0.0f;
         var results = p.eval(testImages);
 

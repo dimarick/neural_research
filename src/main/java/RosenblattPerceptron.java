@@ -23,7 +23,6 @@ import java.util.*;
 public class RosenblattPerceptron {
     public static final float ALPHA = 1.0f;
     public static final float GENERALIZATION_FACTOR = 1e-6f;
-    public static final float LOSS_THRESHOLD = 0.7f;
     final private Random random;
     final private MatrixF32 sensorLayer;
     final private MatrixF32 assocLayer;
@@ -54,11 +53,11 @@ public class RosenblattPerceptron {
     }
 
     private VectorF32 evalLayer2(VectorF32 hiddenResultMatrix) {
-        return Ops.multiple(assocLayer, hiddenResultMatrix);
+        return Ops.product(assocLayer, hiddenResultMatrix);
     }
 
     public VectorF32 evalLayer1(float[] sensorData) {
-        final var hiddenResultMatrix = Ops.multiple(sensorLayer, new VectorF32(sensorData));
+        final var hiddenResultMatrix = Ops.product(sensorLayer, new VectorF32(sensorData));
         new Activation.ReLU().apply(hiddenResultMatrix);
         NeuralAlgo.normalize(hiddenResultMatrix);
 

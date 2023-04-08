@@ -23,7 +23,7 @@ public class Nesterov implements Optimizer.Interface {
 
         var m = momentumData.get(layer);
 
-        Ops.multiple(gradient.toVerticalMatrix(), new VectorF32(new float[]{1}).toHorizontalMatrix(), m.toVerticalMatrix(), 1 - alpha, alpha);
+        Ops.product(gradient.toVerticalMatrix(), new VectorF32(new float[]{1}).toHorizontalMatrix(), m.toVerticalMatrix(), 1 - alpha, alpha);
 
         Ops.add(weights, gradient, -eta);
         Ops.add(m, weights, -eta * alpha);

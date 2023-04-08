@@ -1,7 +1,7 @@
 import neural.Activation;
 import neural.Dropout;
 import neural.Regularization;
-import neural.RumelhartPerceptron;
+import neural.FeedForwardNeuralNetwork;
 import neural.optimizer.*;
 
 import java.io.FileInputStream;
@@ -40,7 +40,7 @@ public class Test4 extends TestBase {
 
             var result = trainImages.length;
 
-            for (var i = 0; i <= 9; i++) {
+            for (var i = 5; i <= 9; i++) {
                 for (var j = 0; j <= 6; j++) {
                     var a = 10 * Math.pow(2, i);
                     var dropoutInput = 0.3f;
@@ -59,7 +59,7 @@ public class Test4 extends TestBase {
                         case 2560 -> 0.00004f;
                         case 5120 -> 0.00001f;
                         default -> 0.001f;
-                    } * 2f;
+                    } * 0.25f;
 
                     var optimizer = switch (j) {
                         case 0 -> new SGD();
@@ -83,13 +83,18 @@ public class Test4 extends TestBase {
 
                     var rAlgo = new Regularization.ElasticNet(1e-1f);
 
-                    var dropout = new Dropout.Zero(new Random(random.nextLong()), 0.0f);
+                    var dropout = new Dropout.Zero(new Random(random.nextLong()), 0.22f);
 
-                    var p = new RumelhartPerceptron(random, optimizer)
+                    var p = new FeedForwardNeuralNetwork(random, optimizer)
                             .addLayer(28 * 28)
                             .set(new Activation.LeakyReLU())
                             .set(dropoutInputAlgo)
                             .parent()
+
+                            .addLayer((int)a)
+                            .set(new Activation.LeakyReLU())
+                            .set(dropout)
+                            .set(rAlgo).parent()
 
                             .addLayer((int)a)
                             .set(new Activation.LeakyReLU())
@@ -127,7 +132,7 @@ public class Test4 extends TestBase {
         }
     }
 
-    private static int train(float[] testImages, byte[] testLabels, float[] trainImages, byte[] trainLabels, float speed, Dropout.Zero dropoutA, RumelhartPerceptron p) {
+    private static int train(float[] testImages, byte[] testLabels, float[] trainImages, byte[] trainLabels, float speed, Dropout.Zero dropoutA, FeedForwardNeuralNetwork p) {
         var order = new LinkedList<Integer>();
 
         int imageSize = p.inputSize();

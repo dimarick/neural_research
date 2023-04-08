@@ -38,7 +38,7 @@ public class Regularization {
         public void apply(MatrixF32 weights, float eta) {
             float[] data = weights.getData();
 
-            var l = Ops.multiple(
+            var l = Ops.product(
                     new MatrixF32(1, data.length, data),
                     new MatrixF32(data.length, 1, data), 1.0f / data.length * generalizationFactor, 0
             ).getData()[0];
