@@ -124,8 +124,9 @@ public class FeedForwardNeuralNetwork {
 
     private void generateWeights(float[] layer, Random random, int size) {
         for (var i = 0; i < layer.length; i++) {
-//            layer[i] = random.nextFloat(-0.5f / (size * size), 0.5f / (float)(size * size));
-            layer[i] = (float)random.nextGaussian(0.0f, 1f / size);
+            var v = (float)Math.sqrt(size);
+            layer[i] = random.nextFloat(-0.5f / v, 0.5f / v);
+//            layer[i] = (float)random.nextGaussian(0.0f, 1f / v);
         }
     }
 
@@ -179,13 +180,13 @@ public class FeedForwardNeuralNetwork {
         layers[hiddenLayers.size() + 1] = outputLayer;
 
         backPropagation.apply(optimizer, layers, layerResult, new MatrixF32(layerInput.getRows(), outputLayer.size, target), eta);
-
-        if (new Random().nextFloat(0.0f, 1.0f) > 0.9f) {
-            for (var i = hiddenLayers.size() - 1; i > 0; i--) {
-                hiddenLayers.get(i).regularization.apply(hiddenLayers.get(i).weights, eta);
-            }
-            outputLayer.regularization.apply(outputLayer.weights, eta);
-        }
+//
+//        if (new Random().nextFloat(0.0f, 1.0f) > 0.9f) {
+//            for (var i = hiddenLayers.size() - 1; i > 0; i--) {
+//                hiddenLayers.get(i).regularization.apply(hiddenLayers.get(i).weights, 1);
+//            }
+//            outputLayer.regularization.apply(outputLayer.weights, 1);
+//        }
 
         return result.getData();
     }

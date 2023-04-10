@@ -1,6 +1,5 @@
 import neural.Activation;
 import neural.Dropout;
-import neural.Regularization;
 import neural.FeedForwardNeuralNetwork;
 import neural.optimizer.*;
 
@@ -40,26 +39,14 @@ public class Test4 extends TestBase {
 
             var result = trainImages.length;
 
-            for (var i = 5; i <= 9; i++) {
+            for (var i = 0; i <= 9; i++) {
                 for (var j = 0; j <= 6; j++) {
                     var a = 10 * Math.pow(2, i);
                     var dropoutInput = 0.3f;
                     var random = new SecureRandom(new byte[]{3});
                     var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
 
-                    var speed = switch ((int)a) {
-                        case 10 -> 0.001f;
-                        case 20 -> 0.0008f;
-                        case 40 -> 0.0006f;
-                        case 80 -> 0.0004f;
-                        case 160 -> 0.00025f;
-                        case 320 -> 0.0002f;
-                        case 640 -> 0.0002f;
-                        case 1280 -> 0.00015f;
-                        case 2560 -> 0.00004f;
-                        case 5120 -> 0.00001f;
-                        default -> 0.001f;
-                    } * 0.25f;
+                    var speed = 0.001f;
 
                     var optimizer = switch (j) {
                         case 0 -> new SGD();
@@ -75,15 +62,13 @@ public class Test4 extends TestBase {
                         case 0 -> 2;
                         case 1 -> 2;
                         case 2 -> 3;
-                        case 3 -> 100f;
-                        case 4 -> 4f;
-                        case 5 -> 0.5f;
+                        case 3 -> 10f;
+                        case 4 -> 2f;
+                        case 5 -> 0.1f;
                         default -> 2f;
                     };
 
-                    var rAlgo = new Regularization.ElasticNet(1e-1f);
-
-                    var dropout = new Dropout.Zero(new Random(random.nextLong()), 0.22f);
+                    var dropout = new Dropout.Zero(new Random(random.nextLong()), 0f);
 
                     var p = new FeedForwardNeuralNetwork(random, optimizer)
                             .addLayer(28 * 28)
@@ -93,22 +78,14 @@ public class Test4 extends TestBase {
 
                             .addLayer((int)a)
                             .set(new Activation.LeakyReLU())
-                            .set(dropout)
-                            .set(rAlgo).parent()
+                            .set(dropout).parent()
 
                             .addLayer((int)a)
                             .set(new Activation.LeakyReLU())
-                            .set(dropout)
-                            .set(rAlgo).parent()
-
-                            .addLayer((int)a)
-                            .set(new Activation.LeakyReLU())
-                            .set(dropout)
-                            .set(rAlgo).parent()
+                            .set(dropout).parent()
 
                             .addLayer(10)
                             .set(new Activation.SoftmaxStable())
-                            .set(rAlgo)
                             .parent();
 
                     System.out.println("Starting test with speed " + speed * speedOptimizerScale + "(" + a + ", " + 1e-6f + "), volume " + p.volume() + ", dropout I: " + optimizer.getClass().getSimpleName());
@@ -220,12 +197,12 @@ public class Test4 extends TestBase {
 
             System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + failRate * 100 + "%. speed was: " + speed * speedScale + ". Test error rate is: " + testRate * 100 + "%. (" + testRateAvg * 100 + "%)\tDO: " + dropoutA.k);
 
-            if (fail == 0 || (testRateAvg - bestTestRateAvg > 0.03 && epoch > 20) || speedScale < 1e-10) {
+            if ((fail == 0 && epoch > 150) || (testRateAvg - bestTestRateAvg > 0.03 && epoch > 20) || speedScale < 1e-10) {
                 break;
             }
         }
 
-        System.out.println("Best test result epoch is " + bestEpoch + ". Test error rate is: " + bestTestRateAvg * 100 + "bestDO: " + bestDO);
+        System.out.println("Best test result epoch is " + bestEpoch + ". Test error rate is: " + bestTestRateAvg * 100 + " bestDO: " + bestDO);
         System.out.println("Best train result epoch is " + bestTrainEpoch + ". Error rate is: " + bestTrainRate * 100);
 
         return fail;

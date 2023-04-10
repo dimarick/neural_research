@@ -2,10 +2,12 @@ import java.io.*;
 import java.util.Collections;
 import java.util.LinkedList;
 
+/**
+ * Тест сходимости Розенблатта
+ */
 public class Test0 extends TestBase {
 
-    public static final float INITIAL_SPEED = 0.03f;
-    public static final float SPEED_SCALE = 0.6f;
+    public static final float INITIAL_SPEED = 0.02f;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -31,7 +33,7 @@ public class Test0 extends TestBase {
 
             var testStart = System.currentTimeMillis();
 
-            var fail = test(testImages, testLabels, p, System.out);
+            var fail = test(testImages, testLabels, p);
 
             System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + (fail / testImages.length) * 100 + "%");
 
@@ -51,30 +53,31 @@ public class Test0 extends TestBase {
             order.add(i);
         }
 
-        for (var epoch = 0; epoch < 40 && (fail / testImages.length) > 0.081; epoch++) {
+        var speedScale = 1f;
+        var speedDecayTime = 15f;
+        var speedDecayStart = 0;
+
+        for (var epoch = 0; epoch < 100; epoch++) {
             var epochStart = System.currentTimeMillis();
-
-            if (prevFail > fail) {
-                speed /= SPEED_SCALE;
+            if ((epoch - speedDecayStart) > speedDecayTime) {
+                speedScale *= 0.5f;
+                speedDecayStart = epoch;
             }
-
-            prevFail = fail;
 
             Collections.shuffle(order);
 
             for (var i : order) {
                 byte label = trainLabels[i];
                 var target = createTargetForLabel(label);
-                p.train(trainImages[i], target, speed);
+                p.train(trainImages[i], target, speed * speedScale);
             }
 
-            speed *= SPEED_SCALE;
-
-            fail = test(testImages, testLabels, p, new PrintStream(PrintStream.nullOutputStream()));
+            fail = test(testImages, testLabels, p);
+            var trainFail = test(trainImages, trainLabels, p);
 
             var epochTime = System.currentTimeMillis() - epochStart;
 
-            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + (fail / testImages.length) * 100 + "%");
+            System.out.println("epoch is " + epoch + " done. " + epochTime + " ms. Error rate is: " + (trainFail / trainImages.length) * 100 + "%. Test error rate is: " + (fail / testImages.length) * 100 + "%. speed was: " + speed * speedScale);
         }
     }
 }

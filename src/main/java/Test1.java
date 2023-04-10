@@ -35,7 +35,7 @@ public class Test1 extends TestBase {
 
             var speed = INITIAL_SPEED;
 
-            for (var i = 0; i < 30; i++) {
+            for (var i = 5; i < 30; i++) {
                 var a = 125 * Math.pow(2, i);
                 System.out.println("Starting test with speed " + speed + "(" + a + ")");
                 var p = new RosenblattPerceptron(28 * 28, 10, (int) (a), new SecureRandom(new byte[]{3}));

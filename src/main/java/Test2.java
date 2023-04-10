@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.*;
 
+/**
+ * Тест Розенблатта с адаптивным dropout
+ */
 public class Test2 extends TestBase {
 
     private static final int EPOCHS = 300;

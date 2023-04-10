@@ -1,6 +1,5 @@
 package neural;
 
-import dev.ludovic.netlib.BLAS;
 import linear.MatrixF32;
 import linear.Ops;
 import linear.VectorF32;
@@ -48,13 +47,6 @@ public class NeuralAlgo {
                 .map(d -> (int)((d / scale + 0.5) * (max - min) + min)).toArray();
     }
 
-    public static void generalizationApply(float l1, MatrixF32 weights, float generalizationFactor) {
-        var a = weights.getData();
-        for (var i = 0; i < a.length; i++) {
-            a[i] = a[i] > 0 ? Math.max(0, a[i] - l1 * generalizationFactor) : Math.min(0, a[i] + l1 * generalizationFactor);
-        }
-    }
-
     public static void dropout(Random random, float[] result, float k) {
         int[] ints = readIntsFromRandomPool(random, - (int)(result.length * Math.log(1 - k)), 0, result.length);
         for (var i : ints) {
@@ -64,35 +56,6 @@ public class NeuralAlgo {
 
     public static float dropoutRate(float k) {
         return (1.0f / (1 - k));
-    }
-
-    public static int getAnswer(float[] result) {
-        var a = 0;
-        var max = 0.0f;
-
-        for (var i = 0; i < result.length; i++) {
-            if (result[i] > max) {
-                max = result[i];
-                a = i;
-            }
-        }
-
-        return a;
-    }
-    public static float generalizeLasso(MatrixF32 weights) {
-        float[] data = weights.getData();
-
-        return BLAS.getInstance().sasum(data.length, data, 1) / data.length;
-    }
-
-    public static float generalizeRidge(MatrixF32 weights) {
-        var result = 0.0f;
-
-        for (float item : weights.getData()) {
-            result += item * item;
-        }
-
-        return result / weights.getData().length;
     }
 
     public static void normalize(VectorF32 vector) {
@@ -110,13 +73,13 @@ public class NeuralAlgo {
         }
     }
 
-    public static void deltaCorrection(float alpha, VectorF32 result, float[] target, VectorF32 prevLayerResult, MatrixF32 weights) {
+    public static void deltaCorrection(float alpha, VectorF32 result, float[] target, VectorF32 prevLayerResult, MatrixF32 weights, float l2penalty) {
         var delta = new float[target.length];
 
         for (var i = 0; i < target.length; i++) {
             delta[i] = alpha * (target[i] - result.getData()[i]);
         }
 
-        Ops.product(prevLayerResult, new VectorF32(delta), weights, 1.0f, 1.0f).getData();
+        Ops.product(prevLayerResult, new VectorF32(delta), weights, 1.0f, 1.0f - l2penalty).getData();
     }
 }

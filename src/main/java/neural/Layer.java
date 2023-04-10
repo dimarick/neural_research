@@ -12,9 +12,9 @@ public final class Layer {
     public final VectorF32 bias;
     public Activation.Interface activation;
     public Loss.Interface loss;
-    public Regularization.Interface regularization;
     public Dropout.Interface dropout;
     public float lr = 1f;
+    public float l2penalty = 0.01f;
     public int[] dropoutIndexes;
 
     public Layer(FeedForwardNeuralNetwork parent, int size, MatrixF32 weights) {
@@ -24,7 +24,6 @@ public final class Layer {
         this.weights = weights;
         this
                 .set(new Activation.Softmax())
-                .set(new Regularization.Lasso())
                 .set(new Dropout.Zero(new Random(), 0));
     }
 
@@ -45,12 +44,6 @@ public final class Layer {
         return this;
     }
 
-    public Layer set(Regularization.Interface regularization) {
-        this.regularization = regularization;
-
-        return this;
-    }
-
     public Layer set(Dropout.Interface dropout) {
         this.dropout = dropout;
 
@@ -59,6 +52,12 @@ public final class Layer {
 
     public Layer setLr(float lr) {
         this.lr = lr;
+
+        return this;
+    }
+
+    public Layer setL2(float l2penalty) {
+        this.l2penalty = l2penalty;
 
         return this;
     }

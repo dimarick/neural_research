@@ -69,7 +69,12 @@ final public class BackPropagation {
         MatrixF32 inputResult = layerResults[i - 1];
         var batchSize = inputResult.getRows();
         MatrixF32 gradientMatrix = new MatrixF32(batchSize, layer.size, bpItem.inputGradient.getData()).transpose();
-        Ops.product(gradientMatrix, inputResult, bpItem.weightsGradient, 1.0f, 0.0f);
+
+        if (layer.l2penalty > 0) {
+            System.arraycopy(layer.weights.getData(), 0, bpItem.weightsGradient.getData(), 0, layer.weights.getSize());
+        }
+
+        Ops.product(gradientMatrix, inputResult, bpItem.weightsGradient, 1.0f, layer.l2penalty);
 
         var norm = 0.0f;
         for (float v : bpItem.weightsGradient.getData()) {
@@ -82,7 +87,6 @@ final public class BackPropagation {
         if (norm > normMax) {
             Ops.product(bpItem.weightsGradient, normMax / norm);
         }
-
 
         optimizer.apply(i, layer.weights.asVector(), bpItem.weightsGradient.asVector(), eta * layer.dropout.getRate() * layer.lr);
     }

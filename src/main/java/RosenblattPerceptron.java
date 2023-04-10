@@ -22,7 +22,6 @@ import java.util.*;
  */
 public class RosenblattPerceptron {
     public static final float ALPHA = 1.0f;
-    public static final float GENERALIZATION_FACTOR = 1e-6f;
     final private Random random;
     final private MatrixF32 sensorLayer;
     final private MatrixF32 assocLayer;
@@ -82,15 +81,9 @@ public class RosenblattPerceptron {
                 resultMatrix,
                 target,
                 hiddenResultMatrix,
-                assocLayer
+                assocLayer,
+                0.0f
         );
-
-        if (random.nextFloat(0.0f, 1.0f) > 0.95f) {
-            float l1 = NeuralAlgo.generalizeLasso(assocLayer);
-//            float l1 = generalizeRidge(assocLayer);
-//
-            NeuralAlgo.generalizationApply(l1, assocLayer, GENERALIZATION_FACTOR);
-        }
 
         return result;
     }

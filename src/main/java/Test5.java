@@ -1,6 +1,5 @@
 import neural.Activation;
 import neural.Dropout;
-import neural.Regularization;
 import neural.FeedForwardNeuralNetwork;
 import neural.optimizer.*;
 
@@ -14,7 +13,7 @@ import java.util.*;
  */
 public class Test5 extends TestBase {
 
-    private static final int EPOCHS = 600;
+    private static final int EPOCHS = 200;
     public static final int BATCH_SIZE = 200;
 
     public static void main(String[] args) throws RuntimeException {
@@ -39,99 +38,96 @@ public class Test5 extends TestBase {
 
             for (var i = 0; i <= 8; i++) {
                 for (var j = 0; j <= 6; j++) {
-                    var a = 10 * Math.pow(2, i);
+                    for (var k = 0; k <= 3; k++) {
+                        var a = 10 * Math.pow(2, i);
 
-                    var dropoutInput = switch ((int)a) {
-                        case 320 -> 0.3f;
-                        case 640 -> 0.3f;
-                        case 1280 -> 0.3f;
-                        case 2560 -> 0.3f;
-                        default -> 0.3f;
-                    };
+                        var dropoutInput = switch ((int)a) {
+                            case 320 -> 0.3f;
+                            case 640 -> 0.3f;
+                            case 1280 -> 0.3f;
+                            case 2560 -> 0.3f;
+                            default -> 0.2f;
+                        };
 
-                    var random = new SecureRandom(new byte[]{3});
-                    var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
+                        var random = new SecureRandom(new byte[]{3});
+                        var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
 
-                    var dropoutA = switch ((int)a) {
-                        case 320 -> 0.22f;
-                        case 640 -> 0.35f;
-                        case 1280 -> 0.40f;
-                        case 2560 -> 0.81f;
-                        default -> 0.0f;
-                    };
+                        var dropoutA = switch ((int)a) {
+                            case 320 -> 0.22f;
+                            case 640 -> 0.35f;
+                            case 1280 -> 0.40f;
+                            case 2560 -> 0.81f;
+                            default -> 0.0f;
+                        };
 
-                    var speed = switch ((int)a) {
-                        case 10 -> 0.001f;
-                        case 20 -> 0.001f;
-                        case 40 -> 0.001f;
-                        case 80 -> 0.001f;
-                        case 160 -> 0.001f;
-                        case 320 -> 0.0005f;
-                        case 640 -> 0.0005f;
-                        case 1280 -> 0.0005f;
-                        case 2560 -> 0.0005f;
-                        default -> 0.001f;
-                    };
+                        var speed = switch ((int)a) {
+                            case 10 -> 0.0005f;
+                            case 20 -> 0.0005f;
+                            case 40 -> 0.001f;
+                            case 80 -> 0.001f;
+                            case 160 -> 0.001f;
+                            case 320 -> 0.001f;
+                            case 640 -> 0.001f;
+                            case 1280 -> 0.001f;
+                            case 2560 -> 0.001f;
+                            default -> 0.001f;
+                        } * 5;
 
-//                    var speed = 0.0005f;
+    //                    var speed = 0.0005f;
 
-                    var optimizer = switch (j) {
-                        case 0 -> new SGD();
-                        case 1 -> new Momentum(0.9f);
-                        case 2 -> new Nesterov(0.7f);
-                        case 3 -> new AdaGrad();
-                        case 4 -> new RMSProp(0.9f);
-                        case 5 -> new AdaDelta(0.99f);
-                        default -> new Adam();
-                    };
+                        var optimizer = switch (j) {
+                            case 0 -> new SGD();
+                            case 1 -> new Momentum(0.9f);
+                            case 2 -> new Nesterov(0.7f);
+                            case 3 -> new AdaGrad();
+                            case 4 -> new RMSProp(0.9f);
+                            case 5 -> new AdaDelta(0.99f);
+                            default -> new Adam();
+                        };
 
-                    var speedOptimizerScale = switch (j) {
-                        case 0 -> 2f;
-                        case 1 -> 2;
-                        case 2 -> 3;
-                        case 3 -> 10f;
-                        case 4 -> 2f;
-                        case 5 -> 0.5f;
-                        default -> 1f;
-                    };
+                        var speedOptimizerScale = switch (j) {
+                            case 0 -> 2f;
+                            case 1 -> 2;
+                            case 2 -> 3;
+                            case 3 -> 10f;
+                            case 4 -> 2f;
+                            case 5 -> 0.5f;
+                            default -> 1f;
+                        };
 
-                    var rAlgo = new Regularization.ElasticNet(1e-2f);
+                        var dropout = new Dropout.Zero(new Random(random.nextLong()), dropoutA);
 
-                    var dropout = new Dropout.Zero(new Random(random.nextLong()), dropoutA);
+                        var p = new FeedForwardNeuralNetwork(random, optimizer)
+                                .addLayer(28 * 28)
+                                .set(new Activation.LeakyReLU())
+                                .set(dropoutInputAlgo)
+                                .parent()
 
-                    var p = new FeedForwardNeuralNetwork(random, optimizer)
-                            .addLayer(28 * 28)
-                            .set(new Activation.LeakyReLU())
-                            .set(dropoutInputAlgo)
-                            .parent()
+                                .addLayer((int)a)
+                                .set(new Activation.LeakyReLU())
+                                .set(dropout).parent()
 
-                            .addLayer((int)a)
-                            .set(new Activation.LeakyReLU())
-                            .set(dropout)
-                            .set(rAlgo).parent()
+                                .addLayer((int)a)
+                                .set(new Activation.LeakyReLU())
+                                .set(dropout).parent()
 
-                            .addLayer((int)a)
-                            .set(new Activation.LeakyReLU())
-                            .set(dropout)
-                            .set(rAlgo).parent()
+                                .addLayer(10)
+                                .set(new Activation.SoftmaxStable())
+                                .parent();
 
-                            .addLayer(10)
-                            .set(new Activation.SoftmaxStable())
-                            .set(rAlgo)
-                            .parent();
+                        System.out.println("Starting test with speed " + speed * speedOptimizerScale + "(" + a + "), volume " + p.volume() + ", dropout I: " + optimizer.getClass().getSimpleName());
 
-                    System.out.println("Starting test with speed " + speed * speedOptimizerScale + "(" + a + "), volume " + p.volume() + ", dropout I: " + optimizer.getClass().getSimpleName());
+                        result = train(testImages, testLabels, trainImages, trainLabels, speed * speedOptimizerScale, p);
 
-                    result = train(testImages, testLabels, trainImages, trainLabels, speed * speedOptimizerScale, p);
+                        var testStart = System.currentTimeMillis();
 
-                    var testStart = System.currentTimeMillis();
+                        var fail = testBatch(testImages, testLabels, p);
 
-                    var fail = testBatch(testImages, testLabels, p);
+                        var trainRate = ((float)result / trainLabels.length) * 100;
 
-                    var trainRate = ((float)result / trainLabels.length) * 100;
-
-                    var testRate = (fail / testLabels.length) * 100;
-                    System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + trainRate + "% " + ". Test Error rate is: " + testRate + "%");
+                        var testRate = (fail / testLabels.length) * 100;
+                        System.out.println("test is done. " + (System.currentTimeMillis() - testStart) + " ms. Error rate is: " + trainRate + "% " + ". Test Error rate is: " + testRate + "%");
+                    }
                 }
             }
 

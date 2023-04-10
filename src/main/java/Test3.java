@@ -1,6 +1,5 @@
 import neural.Activation;
 import neural.Dropout;
-import neural.Regularization;
 import neural.FeedForwardNeuralNetwork;
 import neural.optimizer.*;
 
@@ -17,7 +16,7 @@ import java.util.Random;
  */
 public class Test3 extends TestBase {
 
-    private static final int EPOCHS = 2000;
+    private static final int EPOCHS = 600;
     public static final int BATCH_SIZE = 200;
 
     public static void main(String[] args) throws RuntimeException {
@@ -47,21 +46,7 @@ public class Test3 extends TestBase {
                     var random = new SecureRandom(new byte[]{3});
                     var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
 
-                    var speed = switch ((int)a) {
-                        case 10 -> 0.001f;
-                        case 20 -> 0.0008f;
-                        case 40 -> 0.0006f;
-                        case 80 -> 0.0004f;
-                        case 160 -> 0.00025f;
-                        case 320 -> 0.0002f;
-                        case 640 -> 0.0002f;
-                        case 1280 -> 0.00015f;
-                        case 2560 -> 0.00004f;
-                        case 5120 -> 0.00001f;
-                        default -> 0.001f;
-                    };
-
-                    var rAlgo = new Regularization.ElasticNet(1e-5f);
+                    var speed = 0.001f;
 
                     var dropout = new Dropout.Zero(new Random(random.nextLong()), 0);
                     var optimizer = switch (j) {
@@ -78,7 +63,7 @@ public class Test3 extends TestBase {
                         case 0 -> 2;
                         case 1 -> 2;
                         case 2 -> 3;
-                        case 3 -> 100f;
+                        case 3 -> 10f;
                         case 4 -> 4f;
                         case 5 -> 0.5f;
                         default -> 1f;
@@ -92,20 +77,17 @@ public class Test3 extends TestBase {
 
                             .addLayer((int)a)
                             .set(new Activation.LeakyReLU())
-                            .set(dropout)
-                            .set(rAlgo).parent()
+                            .set(dropout).parent()
 
                             .addLayer((int)a)
                             .set(new Activation.LeakyReLU())
-                            .set(dropout)
-                            .set(rAlgo).parent()
+                            .set(dropout).parent()
 
                             .addLayer(10)
                             .set(new Activation.SoftmaxStable())
-                            .set(rAlgo)
                             .parent();
 
-                    System.out.println("Starting test with speed " + speed * speedOptimizerScale + "(" + a + ", " + 1e-6f + "), volume " + p.volume() + ", dropout I: " + optimizer.getClass().getSimpleName() + ", dropout " + dropoutInput);
+                    System.out.println("Starting test with speed " + speed * speedOptimizerScale + "(" + a + "), volume " + p.volume() + ", optimizer: " + optimizer.getClass().getSimpleName());
 
                     result = train(testImages, testLabels, trainImages, trainLabels, speed * speedOptimizerScale, p);
 
@@ -149,7 +131,7 @@ public class Test3 extends TestBase {
         var testRateAvg = -1f;
         var bestTestRateAvg = 1f;
         var speedScale = 1f;
-        var speedDecayTime = 80f;
+        var speedDecayTime = 50f;
         var speedDecayStart = 0;
         var bestEpoch = 0;
         var bestTrainRate = 1f;
@@ -164,7 +146,6 @@ public class Test3 extends TestBase {
             var epochStart = System.currentTimeMillis();
             if ((epoch - speedDecayStart) > speedDecayTime) {
                 speedScale *= 0.5f;
-                speedDecayTime *= 0.7;
                 speedDecayStart = epoch;
             }
 

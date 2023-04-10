@@ -19,17 +19,6 @@ public class TestBase {
         return a;
     }
 
-    protected static float getDistanceEst(float[] result, float[] target) {
-        var d = 0.0f;
-
-        for (var i = 0; i < result.length; i++) {
-            float d1 = result[i] - target[i];
-            d += d1 * d1;
-        }
-
-        return d;
-    }
-
     protected static float[] createTargetForLabel(byte label) {
         var result = new float[10];
 
@@ -124,19 +113,17 @@ public class TestBase {
         return images;
     }
 
-    protected static float test(float[][] testImages, byte[] testLabels, SingleLayerPerceptron p, PrintStream output) {
+    protected static float test(float[][] testImages, byte[] testLabels, SingleLayerPerceptron p) {
 
         var fail = 0.0f;
 
         for (var i = 0; i < testImages.length; i++) {
             byte label = testLabels[i];
             var result = p.eval(testImages[i]);
-            var target = createTargetForLabel(label);
 
             int answer = getAnswer(result);
 
             if (answer != label) {
-                output.println("Wrong!!!  i = " + i + ";" + getDistanceEst(result, target) + ", answer is " + answer + "(" + result[answer] + ") != " + label + "    " + Arrays.toString(result));
                 fail++;
             }
         }
