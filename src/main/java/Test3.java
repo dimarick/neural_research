@@ -46,7 +46,18 @@ public class Test3 extends TestBase {
                     var random = new SecureRandom(new byte[]{3});
                     var dropoutInputAlgo = new Dropout.Zero(new Random(random.nextLong()), dropoutInput);
 
-                    var speed = 0.001f;
+                    var speed = switch ((int)a) {
+                        case 10 -> 0.0003f;
+                        case 20 -> 0.0005f;
+                        case 40 -> 0.001f;
+                        case 80 -> 0.001f;
+                        case 160 -> 0.001f;
+                        case 320 -> 0.001f;
+                        case 640 -> 0.001f;
+                        case 1280 -> 0.001f;
+                        case 2560 -> 0.001f;
+                        default -> 0.001f;
+                    };
 
                     var dropout = new Dropout.Zero(new Random(random.nextLong()), 0);
                     var optimizer = switch (j) {
@@ -63,11 +74,15 @@ public class Test3 extends TestBase {
                         case 0 -> 2;
                         case 1 -> 2;
                         case 2 -> 3;
-                        case 3 -> 10f;
+                        case 3 -> 20f;
                         case 4 -> 4f;
-                        case 5 -> 0.5f;
+                        case 5 -> 0.01f;
                         default -> 1f;
                     };
+
+                    if (optimizer instanceof AdaDelta && a >= 1280) {
+                        speedOptimizerScale *= 0.3f;
+                    }
 
                     var p = new FeedForwardNeuralNetwork(random, optimizer)
                             .addLayer(28 * 28)
@@ -131,17 +146,13 @@ public class Test3 extends TestBase {
         var testRateAvg = -1f;
         var bestTestRateAvg = 1f;
         var speedScale = 1f;
-        var speedDecayTime = 50f;
+        var speedDecayTime = 80f;
         var speedDecayStart = 0;
         var bestEpoch = 0;
         var bestTrainRate = 1f;
         var bestTrainEpoch = 0;
 
         for (var epoch = 0; epoch < EPOCHS; epoch++) {
-            if (epoch == 20) {
-                speedScale *= 0.5f;
-            }
-
             fail = 0;
             var epochStart = System.currentTimeMillis();
             if ((epoch - speedDecayStart) > speedDecayTime) {

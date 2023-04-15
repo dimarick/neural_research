@@ -1,0 +1,146 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------------< org.itlearn:ml >---------------------------
+[INFO] Building ml 1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.0:resources (default-resources) @ ml ---
+[INFO] Copying 4 resources
+[INFO] 
+[INFO] --- compiler:3.3:compile (default-compile) @ ml ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 30 source files to /home/dima/itlearn/ml/target/classes
+[INFO] 
+[INFO] --- resources:3.3.0:testResources (default-testResources) @ ml ---
+[INFO] Not copying test resources
+[INFO] 
+[INFO] --- compiler:3.3:testCompile (default-testCompile) @ ml ---
+[INFO] Not compiling test sources
+[INFO] 
+[INFO] --- surefire:3.0.0-M8:test (default-test) @ ml ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.3.0:jar (default-jar) @ ml ---
+[INFO] Building jar: /home/dima/itlearn/ml/target/ml-1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] --- install:3.1.0:install (default-install) @ ml ---
+[INFO] Installing /home/dima/itlearn/ml/pom.xml to /home/dima/.m2/repository/org/itlearn/ml/1.0-SNAPSHOT/ml-1.0-SNAPSHOT.pom
+[INFO] Installing /home/dima/itlearn/ml/target/ml-1.0-SNAPSHOT.jar to /home/dima/.m2/repository/org/itlearn/ml/1.0-SNAPSHOT/ml-1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] --- resources:3.3.0:resources (default-resources) @ ml ---
+[INFO] Copying 4 resources
+[INFO] 
+[INFO] --- compiler:3.3:compile (default-compile) @ ml ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- exec:3.1.0:java (default-cli) @ ml ---
+Files loaded 254 ms
+epoch is 0 done. 246 ms. Error rate is: 9.82%. Test error rate is: 9.52%. speed was: 0.02
+epoch is 1 done. 214 ms. Error rate is: 9.29%. Test error rate is: 9.34%. speed was: 0.02
+epoch is 2 done. 213 ms. Error rate is: 8.943334%. Test error rate is: 9.099999%. speed was: 0.02
+epoch is 3 done. 213 ms. Error rate is: 8.8550005%. Test error rate is: 9.08%. speed was: 0.02
+epoch is 4 done. 212 ms. Error rate is: 8.751667%. Test error rate is: 8.88%. speed was: 0.02
+epoch is 5 done. 212 ms. Error rate is: 8.476666%. Test error rate is: 9.139999%. speed was: 0.02
+epoch is 6 done. 213 ms. Error rate is: 9.128334%. Test error rate is: 9.63%. speed was: 0.02
+epoch is 7 done. 214 ms. Error rate is: 8.805%. Test error rate is: 9.12%. speed was: 0.02
+epoch is 8 done. 212 ms. Error rate is: 8.406667%. Test error rate is: 8.88%. speed was: 0.02
+epoch is 9 done. 228 ms. Error rate is: 8.523333%. Test error rate is: 8.84%. speed was: 0.02
+epoch is 10 done. 216 ms. Error rate is: 8.961666%. Test error rate is: 8.97%. speed was: 0.02
+epoch is 11 done. 215 ms. Error rate is: 8.683333%. Test error rate is: 8.97%. speed was: 0.02
+epoch is 12 done. 216 ms. Error rate is: 8.521667%. Test error rate is: 9.15%. speed was: 0.02
+epoch is 13 done. 215 ms. Error rate is: 8.691667%. Test error rate is: 8.71%. speed was: 0.02
+epoch is 14 done. 216 ms. Error rate is: 8.701667%. Test error rate is: 9.28%. speed was: 0.02
+epoch is 15 done. 215 ms. Error rate is: 8.418333%. Test error rate is: 8.48%. speed was: 0.02
+epoch is 16 done. 215 ms. Error rate is: 8.055%. Test error rate is: 8.54%. speed was: 0.01
+epoch is 17 done. 214 ms. Error rate is: 8.143333%. Test error rate is: 8.47%. speed was: 0.01
+epoch is 18 done. 216 ms. Error rate is: 8.053333%. Test error rate is: 8.92%. speed was: 0.01
+epoch is 19 done. 215 ms. Error rate is: 8.156667%. Test error rate is: 8.65%. speed was: 0.01
+epoch is 20 done. 215 ms. Error rate is: 7.99%. Test error rate is: 8.62%. speed was: 0.01
+epoch is 21 done. 215 ms. Error rate is: 8.068334%. Test error rate is: 8.48%. speed was: 0.01
+epoch is 22 done. 215 ms. Error rate is: 8.14%. Test error rate is: 8.97%. speed was: 0.01
+epoch is 23 done. 220 ms. Error rate is: 8.276667%. Test error rate is: 8.95%. speed was: 0.01
+epoch is 24 done. 215 ms. Error rate is: 7.7299995%. Test error rate is: 8.309999%. speed was: 0.01
+epoch is 25 done. 215 ms. Error rate is: 8.026667%. Test error rate is: 8.76%. speed was: 0.01
+epoch is 26 done. 214 ms. Error rate is: 7.883333%. Test error rate is: 8.47%. speed was: 0.01
+epoch is 27 done. 215 ms. Error rate is: 7.976667%. Test error rate is: 8.37%. speed was: 0.01
+epoch is 28 done. 214 ms. Error rate is: 7.8%. Test error rate is: 8.59%. speed was: 0.01
+epoch is 29 done. 215 ms. Error rate is: 8.13%. Test error rate is: 8.48%. speed was: 0.01
+epoch is 30 done. 214 ms. Error rate is: 8.015%. Test error rate is: 8.6%. speed was: 0.01
+epoch is 31 done. 215 ms. Error rate is: 7.8900003%. Test error rate is: 8.41%. speed was: 0.01
+epoch is 32 done. 215 ms. Error rate is: 7.746667%. Test error rate is: 8.16%. speed was: 0.005
+epoch is 33 done. 214 ms. Error rate is: 7.6683335%. Test error rate is: 8.41%. speed was: 0.005
+epoch is 34 done. 215 ms. Error rate is: 7.5883336%. Test error rate is: 8.150001%. speed was: 0.005
+epoch is 35 done. 214 ms. Error rate is: 7.865%. Test error rate is: 8.22%. speed was: 0.005
+epoch is 36 done. 214 ms. Error rate is: 7.626667%. Test error rate is: 8.28%. speed was: 0.005
+epoch is 37 done. 215 ms. Error rate is: 7.6583333%. Test error rate is: 8.4%. speed was: 0.005
+epoch is 38 done. 214 ms. Error rate is: 7.6583333%. Test error rate is: 8.429999%. speed was: 0.005
+epoch is 39 done. 215 ms. Error rate is: 7.5666666%. Test error rate is: 8.349999%. speed was: 0.005
+epoch is 40 done. 214 ms. Error rate is: 7.806667%. Test error rate is: 8.62%. speed was: 0.005
+epoch is 41 done. 215 ms. Error rate is: 7.6583333%. Test error rate is: 8.14%. speed was: 0.005
+epoch is 42 done. 214 ms. Error rate is: 7.7533336%. Test error rate is: 8.66%. speed was: 0.005
+epoch is 43 done. 215 ms. Error rate is: 7.621667%. Test error rate is: 8.29%. speed was: 0.005
+epoch is 44 done. 214 ms. Error rate is: 7.8050003%. Test error rate is: 8.349999%. speed was: 0.005
+epoch is 45 done. 214 ms. Error rate is: 7.6416664%. Test error rate is: 8.32%. speed was: 0.005
+epoch is 46 done. 214 ms. Error rate is: 7.7083335%. Test error rate is: 8.29%. speed was: 0.005
+epoch is 47 done. 214 ms. Error rate is: 7.7083335%. Test error rate is: 8.42%. speed was: 0.005
+epoch is 48 done. 214 ms. Error rate is: 7.5099998%. Test error rate is: 8.349999%. speed was: 0.0025
+epoch is 49 done. 215 ms. Error rate is: 7.555%. Test error rate is: 8.18%. speed was: 0.0025
+epoch is 50 done. 213 ms. Error rate is: 7.558333%. Test error rate is: 8.299999%. speed was: 0.0025
+epoch is 51 done. 214 ms. Error rate is: 7.666667%. Test error rate is: 8.349999%. speed was: 0.0025
+epoch is 52 done. 214 ms. Error rate is: 7.4983335%. Test error rate is: 8.4%. speed was: 0.0025
+epoch is 53 done. 215 ms. Error rate is: 7.635%. Test error rate is: 8.28%. speed was: 0.0025
+epoch is 54 done. 214 ms. Error rate is: 7.5099998%. Test error rate is: 8.32%. speed was: 0.0025
+epoch is 55 done. 214 ms. Error rate is: 7.598333%. Test error rate is: 8.42%. speed was: 0.0025
+epoch is 56 done. 214 ms. Error rate is: 7.4733334%. Test error rate is: 8.38%. speed was: 0.0025
+epoch is 57 done. 215 ms. Error rate is: 7.688333%. Test error rate is: 8.42%. speed was: 0.0025
+epoch is 58 done. 214 ms. Error rate is: 7.523333%. Test error rate is: 8.16%. speed was: 0.0025
+epoch is 59 done. 214 ms. Error rate is: 7.62%. Test error rate is: 8.49%. speed was: 0.0025
+epoch is 60 done. 214 ms. Error rate is: 7.5483336%. Test error rate is: 8.21%. speed was: 0.0025
+epoch is 61 done. 214 ms. Error rate is: 7.546667%. Test error rate is: 8.26%. speed was: 0.0025
+epoch is 62 done. 214 ms. Error rate is: 7.645%. Test error rate is: 8.56%. speed was: 0.0025
+epoch is 63 done. 214 ms. Error rate is: 7.5566664%. Test error rate is: 8.38%. speed was: 0.0025
+epoch is 64 done. 214 ms. Error rate is: 7.5400004%. Test error rate is: 8.32%. speed was: 0.00125
+epoch is 65 done. 214 ms. Error rate is: 7.461666%. Test error rate is: 8.18%. speed was: 0.00125
+epoch is 66 done. 214 ms. Error rate is: 7.4433336%. Test error rate is: 8.21%. speed was: 0.00125
+epoch is 67 done. 214 ms. Error rate is: 7.558333%. Test error rate is: 8.49%. speed was: 0.00125
+epoch is 68 done. 214 ms. Error rate is: 7.5400004%. Test error rate is: 8.429999%. speed was: 0.00125
+epoch is 69 done. 214 ms. Error rate is: 7.4716663%. Test error rate is: 8.120001%. speed was: 0.00125
+epoch is 70 done. 215 ms. Error rate is: 7.4433336%. Test error rate is: 8.150001%. speed was: 0.00125
+epoch is 71 done. 216 ms. Error rate is: 7.4533334%. Test error rate is: 8.2%. speed was: 0.00125
+epoch is 72 done. 214 ms. Error rate is: 7.5033336%. Test error rate is: 8.26%. speed was: 0.00125
+epoch is 73 done. 214 ms. Error rate is: 7.4483337%. Test error rate is: 8.25%. speed was: 0.00125
+epoch is 74 done. 215 ms. Error rate is: 7.52%. Test error rate is: 8.2%. speed was: 0.00125
+epoch is 75 done. 214 ms. Error rate is: 7.4483337%. Test error rate is: 8.25%. speed was: 0.00125
+epoch is 76 done. 214 ms. Error rate is: 7.5400004%. Test error rate is: 8.190001%. speed was: 0.00125
+epoch is 77 done. 215 ms. Error rate is: 7.4983335%. Test error rate is: 8.33%. speed was: 0.00125
+epoch is 78 done. 213 ms. Error rate is: 7.4483337%. Test error rate is: 8.38%. speed was: 0.00125
+epoch is 79 done. 214 ms. Error rate is: 7.4866667%. Test error rate is: 8.2699995%. speed was: 0.00125
+epoch is 80 done. 215 ms. Error rate is: 7.4533334%. Test error rate is: 8.18%. speed was: 6.25E-4
+epoch is 81 done. 214 ms. Error rate is: 7.5033336%. Test error rate is: 8.28%. speed was: 6.25E-4
+epoch is 82 done. 213 ms. Error rate is: 7.4249997%. Test error rate is: 8.28%. speed was: 6.25E-4
+epoch is 83 done. 214 ms. Error rate is: 7.5049996%. Test error rate is: 8.28%. speed was: 6.25E-4
+epoch is 84 done. 215 ms. Error rate is: 7.4783335%. Test error rate is: 8.1%. speed was: 6.25E-4
+epoch is 85 done. 215 ms. Error rate is: 7.4766665%. Test error rate is: 8.13%. speed was: 6.25E-4
+epoch is 86 done. 214 ms. Error rate is: 7.4600005%. Test error rate is: 8.2%. speed was: 6.25E-4
+epoch is 87 done. 214 ms. Error rate is: 7.485%. Test error rate is: 8.25%. speed was: 6.25E-4
+epoch is 88 done. 215 ms. Error rate is: 7.4950004%. Test error rate is: 8.32%. speed was: 6.25E-4
+epoch is 89 done. 214 ms. Error rate is: 7.451667%. Test error rate is: 8.150001%. speed was: 6.25E-4
+epoch is 90 done. 215 ms. Error rate is: 7.5216665%. Test error rate is: 8.29%. speed was: 6.25E-4
+epoch is 91 done. 215 ms. Error rate is: 7.4199996%. Test error rate is: 8.1%. speed was: 6.25E-4
+epoch is 92 done. 214 ms. Error rate is: 7.451667%. Test error rate is: 8.1%. speed was: 6.25E-4
+epoch is 93 done. 215 ms. Error rate is: 7.4100003%. Test error rate is: 8.21%. speed was: 6.25E-4
+epoch is 94 done. 215 ms. Error rate is: 7.5166664%. Test error rate is: 8.429999%. speed was: 6.25E-4
+epoch is 95 done. 215 ms. Error rate is: 7.4500003%. Test error rate is: 8.190001%. speed was: 6.25E-4
+epoch is 96 done. 214 ms. Error rate is: 7.456667%. Test error rate is: 8.17%. speed was: 3.125E-4
+epoch is 97 done. 214 ms. Error rate is: 7.4683332%. Test error rate is: 8.2%. speed was: 3.125E-4
+epoch is 98 done. 215 ms. Error rate is: 7.47%. Test error rate is: 8.190001%. speed was: 3.125E-4
+epoch is 99 done. 215 ms. Error rate is: 7.4816666%. Test error rate is: 8.21%. speed was: 3.125E-4
+test is done. 6 ms. Error rate is: 8.21%
+Success
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  23.019 s
+[INFO] Finished at: 2023-04-10T09:36:36+05:00
+[INFO] ------------------------------------------------------------------------

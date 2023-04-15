@@ -11,7 +11,7 @@ import java.util.*;
 public class Test2 extends TestBase {
 
     private static final int EPOCHS = 300;
-    private static final float INITIAL_SPEED = 0.005f;
+    private static final float INITIAL_SPEED = 0.01f;
 
     public static void main(String[] args) throws RuntimeException {
         try (
@@ -33,13 +33,13 @@ public class Test2 extends TestBase {
 
             var result = trainImages.length;
 
-            for (var i = 0; i < 30; i++) {
+            for (var i = 9; i <= 9; i++) {
                 var a = 125 * Math.pow(2, i);
-                var speed = INITIAL_SPEED;
+                var speed = a >= 64000 ? INITIAL_SPEED * 0.25f : INITIAL_SPEED;
 
                 System.out.println("Starting test with speed " + speed + "(" + a + ")");
                 var p = new RosenblattPerceptron(28 * 28, 10, (int) (a), new SecureRandom(new byte[]{3}));
-                result = train(testImages, testLabels, trainImages, trainLabels, speed, 0.01f, p);
+                result = train(testImages, testLabels, trainImages, trainLabels, speed, 0f, p);
 
                 var testStart = System.currentTimeMillis();
 
