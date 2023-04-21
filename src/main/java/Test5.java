@@ -83,7 +83,7 @@ public class Test5 extends TestBase {
                         var speedOptimizerScale = switch (j) {
                             case 0 -> 2;
                             case 1 -> 2;
-                            case 2 -> 3;
+                            case 2 -> 1;
                             case 3 -> 100f;
                             case 4 -> 4f;
                             case 5 -> 0.01f;

@@ -25,7 +25,7 @@ public class Nesterov implements Optimizer.Interface {
 
         Ops.product(gradient.toVerticalMatrix(), new VectorF32(new float[]{1}).toHorizontalMatrix(), m.toVerticalMatrix(), 1 - alpha, alpha);
 
-        Ops.add(weights, gradient, -eta);
-        Ops.add(m, weights, -eta * alpha);
+        Ops.add(m, gradient, eta);
+        Ops.add(gradient, weights, -eta * alpha);
     }
 }

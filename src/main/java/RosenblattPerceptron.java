@@ -45,7 +45,6 @@ public class RosenblattPerceptron {
     public float[] eval(float[] sensorData) {
         final var hiddenResultMatrix = evalLayer1(sensorData);
         final var resultMatrix = evalLayer2(hiddenResultMatrix);
-        NeuralAlgo.normalize(resultMatrix);
         new Activation.Softmax(ALPHA).apply(resultMatrix);
 
         return resultMatrix.getData();
