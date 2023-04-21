@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="plotly-2.20.0.min.js"></script>
+    <script src="loader2.js"></script>
+    <title>Тест сходимости Розенблатта</title>
+</head>
+<body>
+<h1>Тест сходимости Розенблатта</h1>
+
+<h2>А=125</h2>
+<div id="chart-125"></div>
+
+<h2>А=250</h2>
+<div id="chart-250"></div>
+
+<h2>А=500</h2>
+<div id="chart-500"></div>
+
+<h2>А=1000</h2>
+<div id="chart-1000"></div>
+
+<h2>А=2000</h2>
+<div id="chart-2000"></div>
+
+<h2>А=4000</h2>
+<div id="chart-4000"></div>
+
+<h2>А=8000</h2>
+<div id="chart-8000"></div>
+
+<h2>А=16000</h2>
+<div id="chart-16000"></div>
+
+<h2>А=32000</h2>
+<div id="chart-32000"></div>
+
+<h2>А=64000</h2>
+<div id="chart-64000"></div>
+
+</body>
+
+<script>
+load('../log/test1.log', processData);
+</script>
+
+</html>

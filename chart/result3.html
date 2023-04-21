@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="plotly-2.20.0.min.js"></script>
+    <script src="loader.js"></script>
+    <title>Тест сходимости</title>
+</head>
+<body>
+<h1>Тест сходимости</h1>
+
+<h2>784x10x10x10</h2>
+<div id="chart-10"></div>
+
+<h2>784x20x20x10</h2>
+<div id="chart-20"></div>
+
+<h2>784x40x40x10</h2>
+<div id="chart-40"></div>
+
+<h2>784x80x80x10</h2>
+<div id="chart-80"></div>
+
+<h2>784x160x160x10</h2>
+<div id="chart-160"></div>
+
+<h2>784x320x320x10</h2>
+<div id="chart-320"></div>
+
+<h2>784x640x640x10</h2>
+<div id="chart-640"></div>
+
+<h2>784x1280x1280x10</h2>
+<div id="chart-1280"></div>
+
+<h2>784x2560x2560x10</h2>
+<div id="chart-2560"></div>
+
+<h2>784x5120x5120x10</h2>
+<div id="chart-5120"></div>
+
+</body>
+
+<script>
+load('../log/test3.log', processData);
+</script>
+
+</html>
